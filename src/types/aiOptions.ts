@@ -26,6 +26,11 @@ export type FlowStep =
   | 'select-stories'
   | 'generating-states'
   | 'select-tracking'
+  // Build 阶段
+  | 'select-tech-stack'
+  | 'generating-routes'
+  | 'generating-data-model'
+  | 'confirm-build'
   | 'complete';
 
 export interface UserStory {
@@ -54,4 +59,8 @@ export interface GuidedFlowState {
   selectedFeatures: string[];
   selectedStories: UserStory[];
   selectedTrackingEvents: TrackingEvent[];
+  // Build 阶段
+  selectedTechStack: string;
+  generatedRoutes: string;
+  generatedDataModel: string;
 }

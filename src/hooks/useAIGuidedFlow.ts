@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { chatWithAI, getApiKey } from '@/lib/zhipuAI';
 import { AI_GUIDED_PROMPTS, parseAIResponse } from '@/lib/zhipuAI';
 import type { AIOption, AIOptionsResponse, FlowStep, GuidedFlowState, UserStory, TrackingEvent } from '@/types/aiOptions';
-import type { ProjectData, SpecData } from '@/types/sop';
+import type { ProjectData, SpecData, BuildData } from '@/types/sop';
 
 const initialFlowState: GuidedFlowState = {
   step: 'idle',
@@ -18,11 +18,16 @@ const initialFlowState: GuidedFlowState = {
   selectedFeatures: [],
   selectedStories: [],
   selectedTrackingEvents: [],
+  // Build 阶段
+  selectedTechStack: '',
+  generatedRoutes: '',
+  generatedDataModel: '',
 };
 
 export function useAIGuidedFlow(
   updateProject: (updates: Partial<ProjectData>) => void,
-  updateSpec: (updates: Partial<SpecData>) => void
+  updateSpec: (updates: Partial<SpecData>) => void,
+  updateBuild: (updates: Partial<BuildData>) => void
 ) {
   const [flowState, setFlowState] = useState<GuidedFlowState>(initialFlowState);
   const [options, setOptions] = useState<AIOptionsResponse | null>(null);
@@ -203,8 +208,79 @@ export function useAIGuidedFlow(
         setFlowState((prev) => ({ 
           ...prev, 
           selectedTrackingEvents: selectedEvents, 
-          step: 'complete' 
+          step: 'select-tech-stack' 
         }));
+        
+        // 继续到 Build 阶段 - 生成技术栈选项
+        const techStackResult = await generateOptions(
+          AI_GUIDED_PROMPTS.suggestTechStack(flowState.generatedPRD, flowState.selectedFeatures)
+        );
+        if (techStackResult) setOptions(techStackResult);
+        break;
+      }
+
+      case 'select-tech-stack': {
+        setFlowState((prev) => ({ ...prev, selectedTechStack: value, step: 'generating-routes' }));
+        updateBuild({ repo: value });
+        
+        // 自动生成路由设计
+        setIsLoading(true);
+        setOptions(null);
+        try {
+          const routesPrompt = AI_GUIDED_PROMPTS.generateRoutes(
+            flowState.generatedPRD,
+            flowState.selectedFeatures,
+            flowState.selectedStories
+          );
+          const routesResponse = await chatWithAI([{ role: 'user', content: routesPrompt }]);
+          const routesData = parseAIResponse<{ routes: string }>(routesResponse);
+          
+          if (routesData) {
+            const routes = routesData.routes;
+            updateBuild({ routes });
+            setFlowState((prev) => ({ ...prev, generatedRoutes: routes, step: 'generating-data-model' }));
+            
+            // 继续生成数据模型
+            const dataModelPrompt = AI_GUIDED_PROMPTS.generateDataModel(
+              flowState.generatedPRD,
+              flowState.selectedFeatures,
+              value
+            );
+            const dataModelResponse = await chatWithAI([{ role: 'user', content: dataModelPrompt }]);
+            const dataModelData = parseAIResponse<{ dataModel: string }>(dataModelResponse);
+            
+            if (dataModelData) {
+              const dataModel = dataModelData.dataModel;
+              updateBuild({ dataModel });
+              setFlowState((prev) => ({ ...prev, generatedDataModel: dataModel, step: 'confirm-build' }));
+              
+              // 生成环境配置和发布说明
+              const buildConfigPrompt = AI_GUIDED_PROMPTS.generateBuildConfig(
+                flowState.generatedPRD,
+                flowState.selectedFeatures,
+                value,
+                routes,
+                dataModel
+              );
+              const buildConfigResponse = await chatWithAI([{ role: 'user', content: buildConfigPrompt }]);
+              const buildConfigData = parseAIResponse<{ env: string; releaseNote: string }>(buildConfigResponse);
+              
+              if (buildConfigData) {
+                updateBuild({
+                  env: buildConfigData.env,
+                  releaseNote: buildConfigData.releaseNote,
+                });
+              }
+              
+              // Build 阶段完成
+              setFlowState((prev) => ({ ...prev, step: 'complete' }));
+            }
+          }
+        } catch (err) {
+          setError('生成 Build 配置失败');
+        } finally {
+          setIsLoading(false);
+        }
         setOptions(null);
         break;
       }
@@ -212,7 +288,7 @@ export function useAIGuidedFlow(
       default:
         break;
     }
-  }, [flowState, updateProject, updateSpec, generateOptions]);
+  }, [flowState, updateProject, updateSpec, updateBuild, generateOptions]);
 
   const handleCustomInput = useCallback(async (value: string) => {
     // Treat custom input same as selected option
@@ -275,6 +351,12 @@ export function useAIGuidedFlow(
           AI_GUIDED_PROMPTS.suggestTrackingEvents(flowState.selectedFeatures, flowState.selectedStories)
         );
         if (trackingResult) setOptions(trackingResult);
+        break;
+      case 'select-tech-stack':
+        const techStackResult = await generateOptions(
+          AI_GUIDED_PROMPTS.suggestTechStack(flowState.generatedPRD, flowState.selectedFeatures)
+        );
+        if (techStackResult) setOptions(techStackResult);
         break;
     }
   }, [flowState, generateOptions]);

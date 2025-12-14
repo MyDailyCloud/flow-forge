@@ -284,6 +284,67 @@ PRD：${prd}
   ]
 }
 只返回 JSON。`,
+
+  // Build 阶段 - 选择技术栈
+  suggestTechStack: (prd: string, features: string[]) => `
+根据产品需求和功能：
+PRD：${prd}
+功能：${features.join('、')}
+
+生成 4 个技术栈方案选项。必须严格返回以下 JSON 格式：
+{
+  "type": "single",
+  "question": "选择最适合的技术栈方案",
+  "options": [
+    {"id": "1", "label": "方案名称", "description": "技术组合说明 (如: React + Supabase + Tailwind)"},
+    {"id": "2", "label": "方案名称", "description": "技术组合说明"},
+    {"id": "3", "label": "方案名称", "description": "技术组合说明"},
+    {"id": "4", "label": "方案名称", "description": "技术组合说明"}
+  ]
+}
+只返回 JSON。`,
+
+  // Build 阶段 - 生成路由设计
+  generateRoutes: (prd: string, features: string[], stories: Array<{ asA: string; iWant: string; soThat: string }>) => `
+根据产品需求、功能和用户故事：
+PRD：${prd}
+功能：${features.join('、')}
+用户故事：${JSON.stringify(stories)}
+
+设计前端路由结构。必须严格返回以下 JSON 格式：
+{
+  "routes": "/ 首页\\n/login 登录页\\n/dashboard 控制台\\n  /dashboard/overview 概览\\n  /dashboard/settings 设置\\n/profile 个人中心\\n..."
+}
+使用换行和缩进表示层级关系。只返回 JSON。`,
+
+  // Build 阶段 - 生成数据模型设计
+  generateDataModel: (prd: string, features: string[], techStack: string) => `
+根据产品需求、功能和技术栈：
+PRD：${prd}
+功能：${features.join('、')}
+技术栈：${techStack}
+
+设计数据模型。必须严格返回以下 JSON 格式：
+{
+  "dataModel": "## 用户表 (users)\\n- id: uuid, 主键\\n- email: string, 邮箱\\n- name: string, 用户名\\n- created_at: timestamp\\n\\n## 内容表 (contents)\\n- id: uuid, 主键\\n- user_id: uuid, 外键关联 users\\n- title: string, 标题\\n- content: text, 内容\\n..."
+}
+使用 Markdown 格式描述表结构。只返回 JSON。`,
+
+  // Build 阶段 - 生成完整 Build 配置
+  generateBuildConfig: (prd: string, features: string[], techStack: string, routes: string, dataModel: string) => `
+根据以下信息生成环境配置和发布说明：
+PRD：${prd}
+功能：${features.join('、')}
+技术栈：${techStack}
+路由：${routes}
+数据模型：${dataModel}
+
+必须严格返回以下 JSON 格式：
+{
+  "env": "NODE_ENV=development\\nAPI_URL=https://api.example.com\\nSUPABASE_URL=xxx\\nSUPABASE_ANON_KEY=xxx",
+  "releaseNote": "v0.1.0 MVP 版本\\n\\n主要功能：\\n- 功能1描述\\n- 功能2描述\\n\\n技术栈：xxx\\n\\n注意事项：\\n- 注意点1\\n- 注意点2"
+}
+只返回 JSON。`,
 };
 
 // SOP 相关的 AI 提示词

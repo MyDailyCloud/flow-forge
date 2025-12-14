@@ -23,7 +23,7 @@ function createWindow() {
     },
     titleBarStyle: 'hiddenInset',
     show: false,
-    icon: path.join(__dirname, '../public/favicon.ico'),
+    icon: path.join(__dirname, '../public/icon.png'),
   });
 
   // Show window when ready to prevent visual flash

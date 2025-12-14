@@ -30,6 +30,7 @@ export type FlowStep =
   | 'select-tech-stack'
   | 'generating-routes'
   | 'generating-data-model'
+  | 'generating-slices'
   | 'confirm-build'
   // Growth 阶段
   | 'generating-before-after'
@@ -38,6 +39,14 @@ export type FlowStep =
   | 'select-downloadable'
   | 'confirm-growth'
   | 'complete';
+
+export interface SliceTask {
+  loop: number;
+  name: string;
+  description: string;
+  tasks: string[];
+  estimatedTime: string;
+}
 
 export interface UserStory {
   asA: string;
@@ -69,6 +78,9 @@ export interface GuidedFlowState {
   selectedTechStack: string;
   generatedRoutes: string;
   generatedDataModel: string;
+  generatedSlices: SliceTask[];
+  generatedEnv: string;
+  generatedReleaseNote: string;
   // Growth 阶段
   generatedBeforeAfter: string;
   generatedVideoScript: string;

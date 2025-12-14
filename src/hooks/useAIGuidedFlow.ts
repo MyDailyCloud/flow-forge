@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { chatWithAI, getApiKey } from '@/lib/zhipuAI';
 import { AI_GUIDED_PROMPTS, parseAIResponse } from '@/lib/zhipuAI';
-import type { AIOption, AIOptionsResponse, FlowStep, GuidedFlowState, UserStory, TrackingEvent } from '@/types/aiOptions';
+import type { AIOption, AIOptionsResponse, FlowStep, GuidedFlowState, UserStory, TrackingEvent, SliceTask } from '@/types/aiOptions';
 import type { ProjectData, SpecData, BuildData, GrowthPack } from '@/types/sop';
 
 const initialFlowState: GuidedFlowState = {
@@ -22,6 +22,9 @@ const initialFlowState: GuidedFlowState = {
   selectedTechStack: '',
   generatedRoutes: '',
   generatedDataModel: '',
+  generatedSlices: [],
+  generatedEnv: '',
+  generatedReleaseNote: '',
   // Growth 阶段
   generatedBeforeAfter: '',
   generatedVideoScript: '',
@@ -228,10 +231,10 @@ export function useAIGuidedFlow(
       case 'select-tech-stack': {
         setFlowState((prev) => ({ ...prev, selectedTechStack: value, step: 'generating-routes' }));
         updateBuild({ repo: value });
-        
-        // 自动生成路由设计
-        setIsLoading(true);
         setOptions(null);
+        
+        // Step 1: 生成路由设计
+        setIsLoading(true);
         try {
           const routesPrompt = AI_GUIDED_PROMPTS.generateRoutes(
             flowState.generatedPRD,
@@ -246,7 +249,7 @@ export function useAIGuidedFlow(
             updateBuild({ routes });
             setFlowState((prev) => ({ ...prev, generatedRoutes: routes, step: 'generating-data-model' }));
             
-            // 继续生成数据模型
+            // Step 2: 生成数据模型
             const dataModelPrompt = AI_GUIDED_PROMPTS.generateDataModel(
               flowState.generatedPRD,
               flowState.selectedFeatures,
@@ -258,105 +261,157 @@ export function useAIGuidedFlow(
             if (dataModelData) {
               const dataModel = dataModelData.dataModel;
               updateBuild({ dataModel });
-              setFlowState((prev) => ({ ...prev, generatedDataModel: dataModel, step: 'confirm-build' }));
+              setFlowState((prev) => ({ ...prev, generatedDataModel: dataModel, step: 'generating-slices' }));
               
-              // 生成环境配置和发布说明
-              const buildConfigPrompt = AI_GUIDED_PROMPTS.generateBuildConfig(
-                flowState.generatedPRD,
+              // Step 3: 生成切片任务规划
+              const slicesPrompt = AI_GUIDED_PROMPTS.generateSlicePlan(
+                flowState.generatedLoops,
                 flowState.selectedFeatures,
-                value,
-                routes,
-                dataModel
+                flowState.generatedPRD
               );
-              const buildConfigResponse = await chatWithAI([{ role: 'user', content: buildConfigPrompt }]);
-              const buildConfigData = parseAIResponse<{ env: string; releaseNote: string }>(buildConfigResponse);
+              const slicesResponse = await chatWithAI([{ role: 'user', content: slicesPrompt }]);
+              const slicesData = parseAIResponse<{ slices: SliceTask[] }>(slicesResponse);
               
-              if (buildConfigData) {
+              if (slicesData) {
+                const slices = slicesData.slices;
+                // 更新 Build 数据中的 slice 状态
                 updateBuild({
-                  env: buildConfigData.env,
-                  releaseNote: buildConfigData.releaseNote,
+                  sliceStatus: {
+                    loop1: 'pending',
+                    loop2: 'pending',
+                    loop3: 'pending',
+                  },
                 });
-              }
-              
-              // Build 阶段完成，继续到 Growth 阶段
-              setFlowState((prev) => ({ ...prev, step: 'generating-before-after' }));
-              
-              // 生成 Before/After 对比图描述词
-              const beforeAfterPrompt = AI_GUIDED_PROMPTS.generateBeforeAfter(
-                flowState.generatedPRD,
-                flowState.selectedPersona,
-                flowState.selectedOutcome
-              );
-              const beforeAfterResponse = await chatWithAI([{ role: 'user', content: beforeAfterPrompt }]);
-              const beforeAfterData = parseAIResponse<{ beforeAfter: any }>(beforeAfterResponse);
-              
-              if (beforeAfterData) {
-                const formattedBeforeAfter = formatBeforeAfterContent(beforeAfterData.beforeAfter);
-                updateGrowth({ beforeAfterImage: formattedBeforeAfter });
-                setFlowState((prev) => ({ 
-                  ...prev, 
-                  generatedBeforeAfter: formattedBeforeAfter,
-                  step: 'generating-video-script' 
-                }));
+                setFlowState((prev) => ({ ...prev, generatedSlices: slices, step: 'confirm-build' }));
                 
-                // 生成视频脚本
-                const videoPrompt = AI_GUIDED_PROMPTS.generateVideoScript(
+                // Step 4: 生成环境配置和发布说明
+                const buildConfigPrompt = AI_GUIDED_PROMPTS.generateBuildConfig(
                   flowState.generatedPRD,
-                  flowState.selectedPersona,
-                  flowState.selectedOutcome,
-                  flowState.selectedFeatures
+                  flowState.selectedFeatures,
+                  value,
+                  routes,
+                  dataModel
                 );
-                const videoResponse = await chatWithAI([{ role: 'user', content: videoPrompt }]);
-                const videoData = parseAIResponse<{ videoScript: any }>(videoResponse);
+                const buildConfigResponse = await chatWithAI([{ role: 'user', content: buildConfigPrompt }]);
+                const buildConfigData = parseAIResponse<{ env: string; releaseNote: string }>(buildConfigResponse);
                 
-                if (videoData) {
-                  const formattedVideo = formatVideoScriptContent(videoData.videoScript);
-                  updateGrowth({ shortVideoScript: formattedVideo });
+                if (buildConfigData) {
+                  updateBuild({
+                    env: buildConfigData.env,
+                    releaseNote: buildConfigData.releaseNote,
+                  });
                   setFlowState((prev) => ({ 
                     ...prev, 
-                    generatedVideoScript: formattedVideo,
-                    step: 'generating-longform' 
+                    generatedEnv: buildConfigData.env,
+                    generatedReleaseNote: buildConfigData.releaseNote,
                   }));
-                  
-                  // 生成长文大纲
-                  const longformPrompt = AI_GUIDED_PROMPTS.generateLongformOutline(
-                    flowState.generatedPRD,
-                    flowState.selectedPersona,
-                    flowState.selectedOutcome,
-                    flowState.selectedScenario
-                  );
-                  const longformResponse = await chatWithAI([{ role: 'user', content: longformPrompt }]);
-                  const longformData = parseAIResponse<{ longformOutline: any }>(longformResponse);
-                  
-                  if (longformData) {
-                    const formattedLongform = formatLongformContent(longformData.longformOutline);
-                    updateGrowth({ longformOutline: formattedLongform });
-                    setFlowState((prev) => ({ 
-                      ...prev, 
-                      generatedLongformOutline: formattedLongform,
-                      step: 'select-downloadable' 
-                    }));
-                    
-                    // 生成可领取资产选项
-                    const downloadableResult = await generateOptions(
-                      AI_GUIDED_PROMPTS.suggestDownloadableAssets(
-                        flowState.generatedPRD,
-                        flowState.selectedFeatures,
-                        flowState.selectedPersona
-                      )
-                    );
-                    if (downloadableResult) setOptions(downloadableResult);
-                  }
                 }
+                
+                // 显示 Build 确认选项
+                setOptions({
+                  type: 'single',
+                  question: 'Build 阶段设计已完成，确认后将进入 Growth 阶段',
+                  options: [
+                    { 
+                      id: 'confirm-build', 
+                      label: '确认并继续', 
+                      description: `已生成：路由设计、数据模型、${slices.length} 个切片任务、环境配置`,
+                      value: 'confirm',
+                    }
+                  ],
+                  allowCustom: false,
+                });
               }
             }
           }
         } catch (err) {
-          setError('生成配置失败');
+          setError('生成 Build 配置失败');
         } finally {
           setIsLoading(false);
         }
+        break;
+      }
+
+      case 'confirm-build': {
+        // 用户确认 Build 阶段，进入 Growth 阶段
+        setFlowState((prev) => ({ ...prev, step: 'generating-before-after' }));
         setOptions(null);
+        setIsLoading(true);
+        
+        try {
+          // Growth Step 1: 生成 Before/After 对比图描述词
+          const beforeAfterPrompt = AI_GUIDED_PROMPTS.generateBeforeAfter(
+            flowState.generatedPRD,
+            flowState.selectedPersona,
+            flowState.selectedOutcome
+          );
+          const beforeAfterResponse = await chatWithAI([{ role: 'user', content: beforeAfterPrompt }]);
+          const beforeAfterData = parseAIResponse<{ beforeAfter: any }>(beforeAfterResponse);
+          
+          if (beforeAfterData) {
+            const formattedBeforeAfter = formatBeforeAfterContent(beforeAfterData.beforeAfter);
+            updateGrowth({ beforeAfterImage: formattedBeforeAfter });
+            setFlowState((prev) => ({ 
+              ...prev, 
+              generatedBeforeAfter: formattedBeforeAfter,
+              step: 'generating-video-script' 
+            }));
+            
+            // Growth Step 2: 生成视频脚本
+            const videoPrompt = AI_GUIDED_PROMPTS.generateVideoScript(
+              flowState.generatedPRD,
+              flowState.selectedPersona,
+              flowState.selectedOutcome,
+              flowState.selectedFeatures
+            );
+            const videoResponse = await chatWithAI([{ role: 'user', content: videoPrompt }]);
+            const videoData = parseAIResponse<{ videoScript: any }>(videoResponse);
+            
+            if (videoData) {
+              const formattedVideo = formatVideoScriptContent(videoData.videoScript);
+              updateGrowth({ shortVideoScript: formattedVideo });
+              setFlowState((prev) => ({ 
+                ...prev, 
+                generatedVideoScript: formattedVideo,
+                step: 'generating-longform' 
+              }));
+              
+              // Growth Step 3: 生成长文大纲
+              const longformPrompt = AI_GUIDED_PROMPTS.generateLongformOutline(
+                flowState.generatedPRD,
+                flowState.selectedPersona,
+                flowState.selectedOutcome,
+                flowState.selectedScenario
+              );
+              const longformResponse = await chatWithAI([{ role: 'user', content: longformPrompt }]);
+              const longformData = parseAIResponse<{ longformOutline: any }>(longformResponse);
+              
+              if (longformData) {
+                const formattedLongform = formatLongformContent(longformData.longformOutline);
+                updateGrowth({ longformOutline: formattedLongform });
+                setFlowState((prev) => ({ 
+                  ...prev, 
+                  generatedLongformOutline: formattedLongform,
+                  step: 'select-downloadable' 
+                }));
+                
+                // Growth Step 4: 生成可领取资产选项
+                const downloadableResult = await generateOptions(
+                  AI_GUIDED_PROMPTS.suggestDownloadableAssets(
+                    flowState.generatedPRD,
+                    flowState.selectedFeatures,
+                    flowState.selectedPersona
+                  )
+                );
+                if (downloadableResult) setOptions(downloadableResult);
+              }
+            }
+          }
+        } catch (err) {
+          setError('生成 Growth 内容失败');
+        } finally {
+          setIsLoading(false);
+        }
         break;
       }
 

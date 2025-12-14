@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Loader2 } from 'lucide-react';
-import { chatWithAI, getApiKey, type Message } from '@/lib/zhipuAI';
+import { getApiKey } from '@/storage';
+import { aiService } from '@/services';
 import { toast } from 'sonner';
 
 interface AIAssistButtonProps {
@@ -31,12 +32,10 @@ export function AIAssistButton({
 
     setIsLoading(true);
     try {
-      const messages: Message[] = [
+      const result = await aiService.chat([
         { role: 'system', content: '你是一个专业的产品经理和增长专家，帮助用户完成 SOP 文档。回答要简洁、专业、可执行。' },
         { role: 'user', content: prompt },
-      ];
-
-      const result = await chatWithAI(messages);
+      ]);
       onResult(result);
       toast.success('AI 生成完成');
     } catch (error) {

@@ -13,6 +13,8 @@ import { AIKeyDialog } from '@/components/AIKeyDialog';
 import { AIGuidedStart } from '@/components/AIGuidedStart';
 import { AIGuidedFlow } from '@/components/AIGuidedFlow';
 import { BuildPreviewPanel } from '@/components/BuildPreviewPanel';
+import { QualityPreviewPanel } from '@/components/QualityPreviewPanel';
+import { ReviewPreviewPanel } from '@/components/ReviewPreviewPanel';
 import { AIGuidedProgress } from '@/components/AIGuidedProgress';
 import { useSOPState } from '@/hooks/useSOPState';
 import { useAIGuidedFlow } from '@/hooks/useAIGuidedFlow';
@@ -40,7 +42,7 @@ const Index = () => {
     resetState,
   } = useSOPState();
 
-  const guidedFlow = useAIGuidedFlow(updateProject, updateSpec, updateBuild, updateGrowth);
+  const guidedFlow = useAIGuidedFlow(updateProject, updateSpec, updateBuild, updateQuality, updateGrowth, updateReview);
 
   const { toast } = useToast();
 
@@ -128,9 +130,11 @@ const Index = () => {
       'generating-routes': '正在生成路由设计...',
       'generating-data-model': '正在生成数据模型...',
       'generating-slices': '正在规划切片任务...',
+      'generating-quality-checklist': '正在生成质量检查清单...',
       'generating-before-after': '正在生成 Before/After 对比图描述词...',
       'generating-video-script': '正在生成短视频脚本...',
       'generating-longform': '正在生成长文大纲...',
+      'generating-review-template': '正在生成数据复盘模板...',
     };
 
     if (step in generatingSteps) {
@@ -156,11 +160,11 @@ const Index = () => {
           <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center">
             <Sparkles className="w-8 h-8 text-primary" />
           </div>
-          <h3 className="text-xl font-semibold">全流程设计完成！</h3>
+          <h3 className="text-xl font-semibold">🎉 全流程设计完成！</h3>
           <p className="text-muted-foreground max-w-md mx-auto">
-            AI 已生成完整的产品设计方案：
+            AI 已生成完整的产品设计方案，覆盖 SOP0-SOP5 全部 6 个阶段：
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl mx-auto text-left">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-w-3xl mx-auto text-left">
             <div className="p-3 bg-muted/50 rounded-lg">
               <h4 className="font-medium text-sm mb-1">🚀 Project</h4>
               <ul className="text-xs text-muted-foreground space-y-0.5">
@@ -186,11 +190,27 @@ const Index = () => {
               </ul>
             </div>
             <div className="p-3 bg-muted/50 rounded-lg">
+              <h4 className="font-medium text-sm mb-1">✅ Quality</h4>
+              <ul className="text-xs text-muted-foreground space-y-0.5">
+                <li>• 质量检查清单</li>
+                <li>• 测试用例</li>
+                <li>• 上线检查项</li>
+              </ul>
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
               <h4 className="font-medium text-sm mb-1">📈 Growth</h4>
               <ul className="text-xs text-muted-foreground space-y-0.5">
                 <li>• 对比图 Prompt</li>
                 <li>• 视频脚本</li>
                 <li>• 长文大纲</li>
+              </ul>
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <h4 className="font-medium text-sm mb-1">📊 Review</h4>
+              <ul className="text-xs text-muted-foreground space-y-0.5">
+                <li>• 漏斗分析模板</li>
+                <li>• 复盘问题清单</li>
+                <li>• 反思提示</li>
               </ul>
             </div>
           </div>
@@ -199,27 +219,19 @@ const Index = () => {
               <PenLine className="w-4 h-4 mr-2" />
               查看并编辑
             </Button>
-            <Button
-              variant="glow"
-              onClick={() => {
-                setMode('manual');
-                setCurrentStep(5);
-              }}
-            >
-              继续到 Review 阶段
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
           </div>
         </div>
       );
     }
 
-    // Build 确认步骤时显示预览面板
-    const showBuildPreview = guidedFlow.flowState.step === 'confirm-build';
+    // 各阶段确认步骤时显示预览面板
+    const showBuildPreview = step === 'confirm-build';
+    const showQualityPreview = step === 'confirm-quality';
+    const showReviewPreview = step === 'confirm-review';
     
     return (
       <div className="space-y-6">
-        <AIGuidedProgress currentStep={guidedFlow.flowState.step} isLoading={guidedFlow.isLoading} />
+        <AIGuidedProgress currentStep={step} isLoading={guidedFlow.isLoading} />
         
         {showBuildPreview && (
           <BuildPreviewPanel
@@ -229,6 +241,20 @@ const Index = () => {
             slices={guidedFlow.flowState.generatedSlices}
             env={guidedFlow.flowState.generatedEnv}
             releaseNote={guidedFlow.flowState.generatedReleaseNote}
+          />
+        )}
+
+        {showQualityPreview && (
+          <QualityPreviewPanel
+            qualityChecklist={guidedFlow.flowState.generatedQualityChecklist}
+            testCases={guidedFlow.flowState.generatedTestCases}
+            launchChecklist={guidedFlow.flowState.generatedLaunchChecklist}
+          />
+        )}
+
+        {showReviewPreview && (
+          <ReviewPreviewPanel
+            reviewTemplate={guidedFlow.flowState.generatedReviewTemplate}
           />
         )}
         

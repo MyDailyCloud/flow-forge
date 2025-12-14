@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import { chatWithAI, getApiKey } from '@/lib/zhipuAI';
 import { AI_GUIDED_PROMPTS, parseAIResponse } from '@/lib/zhipuAI';
-import type { AIOption, AIOptionsResponse, FlowStep, GuidedFlowState, UserStory, TrackingEvent, SliceTask } from '@/types/aiOptions';
-import type { ProjectData, SpecData, BuildData, GrowthPack } from '@/types/sop';
+import type { AIOption, AIOptionsResponse, FlowStep, GuidedFlowState, UserStory, TrackingEvent, SliceTask, QualityChecklistData, TestCase, ReviewTemplate } from '@/types/aiOptions';
+import type { ProjectData, SpecData, BuildData, GrowthPack, QualityChecklist, ReviewData } from '@/types/sop';
 
 const initialFlowState: GuidedFlowState = {
   step: 'idle',
@@ -25,18 +25,26 @@ const initialFlowState: GuidedFlowState = {
   generatedSlices: [],
   generatedEnv: '',
   generatedReleaseNote: '',
+  // Quality 阶段
+  generatedQualityChecklist: null,
+  generatedTestCases: [],
+  generatedLaunchChecklist: [],
   // Growth 阶段
   generatedBeforeAfter: '',
   generatedVideoScript: '',
   generatedLongformOutline: '',
   selectedDownloadable: '',
+  // Review 阶段
+  generatedReviewTemplate: null,
 };
 
 export function useAIGuidedFlow(
   updateProject: (updates: Partial<ProjectData>) => void,
   updateSpec: (updates: Partial<SpecData>) => void,
   updateBuild: (updates: Partial<BuildData>) => void,
-  updateGrowth: (updates: Partial<GrowthPack>) => void
+  updateQuality: (updates: Partial<QualityChecklist>) => void,
+  updateGrowth: (updates: Partial<GrowthPack>) => void,
+  updateReview: (updates: Partial<ReviewData>) => void
 ) {
   const [flowState, setFlowState] = useState<GuidedFlowState>(initialFlowState);
   const [options, setOptions] = useState<AIOptionsResponse | null>(null);
@@ -424,7 +432,159 @@ export function useAIGuidedFlow(
           step: 'confirm-growth' 
         }));
         
-        // Growth 阶段完成，全流程结束
+        // 显示 Growth 确认选项
+        setOptions({
+          type: 'single',
+          question: 'Growth 阶段完成！确认后将进入 Quality 阶段',
+          options: [
+            { 
+              id: 'confirm-growth', 
+              label: '确认并继续', 
+              description: '已生成：对比图 Prompt、视频脚本、长文大纲、可领取资产',
+              value: 'confirm',
+            }
+          ],
+          allowCustom: false,
+        });
+        break;
+      }
+
+      case 'confirm-growth': {
+        // 用户确认 Growth 阶段，进入 Quality 阶段
+        setFlowState((prev) => ({ ...prev, step: 'generating-quality-checklist' }));
+        setOptions(null);
+        setIsLoading(true);
+        
+        try {
+          // Quality Step: 生成质量检查清单和测试用例
+          const qualityPrompt = AI_GUIDED_PROMPTS.generateQualityChecklist(
+            flowState.generatedPRD,
+            flowState.generatedRoutes,
+            flowState.generatedDataModel,
+            flowState.selectedFeatures
+          );
+          const qualityResponse = await chatWithAI([{ role: 'user', content: qualityPrompt }]);
+          const qualityData = parseAIResponse<{ 
+            qualityChecklist: QualityChecklistData; 
+            testCases: TestCase[]; 
+            launchChecklist: string[] 
+          }>(qualityResponse);
+          
+          if (qualityData) {
+            // 更新 Quality 状态
+            updateQuality({
+              criticalPathWorks: false,
+              offlineHandled: false,
+              permissionsClear: false,
+              dataTraceable: false,
+              metricsWorking: false,
+            });
+            
+            setFlowState((prev) => ({ 
+              ...prev, 
+              generatedQualityChecklist: qualityData.qualityChecklist,
+              generatedTestCases: qualityData.testCases || [],
+              generatedLaunchChecklist: qualityData.launchChecklist || [],
+              step: 'confirm-quality' 
+            }));
+            
+            // 显示 Quality 确认选项
+            setOptions({
+              type: 'single',
+              question: 'Quality 阶段已生成质量检查清单！确认后将进入 Review 阶段',
+              options: [
+                { 
+                  id: 'confirm-quality', 
+                  label: '确认并继续', 
+                  description: `已生成：质量检查清单、${qualityData.testCases?.length || 0} 个测试用例、${qualityData.launchChecklist?.length || 0} 个上线检查项`,
+                  value: 'confirm',
+                }
+              ],
+              allowCustom: false,
+            });
+          }
+        } catch (err) {
+          setError('生成 Quality 内容失败');
+        } finally {
+          setIsLoading(false);
+        }
+        break;
+      }
+
+      case 'confirm-quality': {
+        // 用户确认 Quality 阶段，进入 Review 阶段
+        setFlowState((prev) => ({ ...prev, step: 'generating-review-template' }));
+        setOptions(null);
+        setIsLoading(true);
+        
+        try {
+          // Review Step: 生成数据复盘模板
+          const reviewPrompt = AI_GUIDED_PROMPTS.generateReviewTemplate(
+            flowState.generatedPRD,
+            flowState.selectedMetric,
+            flowState.generatedLoops,
+            `${flowState.generatedBeforeAfter}\n${flowState.generatedVideoScript}`
+          );
+          const reviewResponse = await chatWithAI([{ role: 'user', content: reviewPrompt }]);
+          const reviewData = parseAIResponse<{ 
+            funnelTemplate: { stages: string[]; metricsToTrack: string[]; expectedBaseline: string }; 
+            reviewQuestions: string[]; 
+            retrospectivePrompts: string[] 
+          }>(reviewResponse);
+          
+          if (reviewData) {
+            const reviewTemplate: ReviewTemplate = {
+              funnelStages: reviewData.funnelTemplate?.stages || [],
+              metricsToTrack: reviewData.funnelTemplate?.metricsToTrack || [],
+              expectedBaseline: reviewData.funnelTemplate?.expectedBaseline || '',
+              reviewQuestions: reviewData.reviewQuestions || [],
+              retrospectivePrompts: reviewData.retrospectivePrompts || [],
+            };
+            
+            // 更新 Review 状态
+            updateReview({
+              funnelMetrics: {
+                exposure: '',
+                reach: '',
+                activation: '',
+                retention: '',
+              },
+              biggestDrop: '',
+              nextExperiment: '',
+              nextWeekGoal: '',
+            });
+            
+            setFlowState((prev) => ({ 
+              ...prev, 
+              generatedReviewTemplate: reviewTemplate,
+              step: 'confirm-review' 
+            }));
+            
+            // 显示 Review 确认选项
+            setOptions({
+              type: 'single',
+              question: 'Review 阶段已生成数据复盘模板！确认后完成全流程',
+              options: [
+                { 
+                  id: 'confirm-review', 
+                  label: '完成全流程', 
+                  description: `已生成：漏斗分析模板、${reviewData.reviewQuestions?.length || 0} 个复盘问题、${reviewData.retrospectivePrompts?.length || 0} 个反思提示`,
+                  value: 'confirm',
+                }
+              ],
+              allowCustom: false,
+            });
+          }
+        } catch (err) {
+          setError('生成 Review 内容失败');
+        } finally {
+          setIsLoading(false);
+        }
+        break;
+      }
+
+      case 'confirm-review': {
+        // 全流程完成
         setFlowState((prev) => ({ ...prev, step: 'complete' }));
         setOptions(null);
         break;
@@ -433,7 +593,7 @@ export function useAIGuidedFlow(
       default:
         break;
     }
-  }, [flowState, updateProject, updateSpec, updateBuild, updateGrowth, generateOptions]);
+  }, [flowState, updateProject, updateSpec, updateBuild, updateQuality, updateGrowth, updateReview, generateOptions]);
 
   const handleCustomInput = useCallback(async (value: string) => {
     // Treat custom input same as selected option

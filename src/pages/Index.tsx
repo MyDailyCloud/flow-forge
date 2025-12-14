@@ -39,7 +39,7 @@ const Index = () => {
     resetState,
   } = useSOPState();
 
-  const guidedFlow = useAIGuidedFlow(updateProject);
+  const guidedFlow = useAIGuidedFlow(updateProject, updateSpec);
 
   const { toast } = useToast();
 
@@ -125,12 +125,30 @@ const Index = () => {
           <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center">
             <Sparkles className="w-8 h-8 text-primary" />
           </div>
-          <h3 className="text-xl font-semibold">项目定义完成！</h3>
+          <h3 className="text-xl font-semibold">Project + Spec 阶段完成！</h3>
           <p className="text-muted-foreground max-w-md mx-auto">
-            AI 已生成完整的项目定义，包括一句话 PRD 和行为闭环。
-            你可以切换到手动模式查看和编辑详情。
+            AI 已生成完整的项目定义和产品规格，包括：
           </p>
-          <div className="flex gap-4 justify-center">
+          <div className="grid grid-cols-2 gap-4 max-w-md mx-auto text-left">
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <h4 className="font-medium text-sm mb-1">Project</h4>
+              <ul className="text-xs text-muted-foreground space-y-0.5">
+                <li>• 目标人群 & 场景</li>
+                <li>• 一句话 PRD</li>
+                <li>• 行为闭环</li>
+              </ul>
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <h4 className="font-medium text-sm mb-1">Spec</h4>
+              <ul className="text-xs text-muted-foreground space-y-0.5">
+                <li>• 功能列表</li>
+                <li>• 用户故事</li>
+                <li>• 状态机 & 文案</li>
+                <li>• 埋点事件</li>
+              </ul>
+            </div>
+          </div>
+          <div className="flex gap-4 justify-center pt-4">
             <Button variant="outline" onClick={handleSwitchToManual}>
               <PenLine className="w-4 h-4 mr-2" />
               查看并编辑
@@ -139,10 +157,10 @@ const Index = () => {
               variant="glow"
               onClick={() => {
                 setMode('manual');
-                setCurrentStep(1);
+                setCurrentStep(2);
               }}
             >
-              继续下一步
+              继续到 Build 阶段
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
@@ -152,7 +170,7 @@ const Index = () => {
 
     return (
       <div className="space-y-6">
-        <AIGuidedProgress currentStep={guidedFlow.flowState.step} />
+        <AIGuidedProgress currentStep={guidedFlow.flowState.step} isLoading={guidedFlow.isLoading} />
         <AIGuidedFlow
           options={guidedFlow.options}
           isLoading={guidedFlow.isLoading}

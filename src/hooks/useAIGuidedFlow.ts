@@ -1,21 +1,29 @@
 import { useState, useCallback } from 'react';
 import { chatWithAI, getApiKey } from '@/lib/zhipuAI';
 import { AI_GUIDED_PROMPTS, parseAIResponse } from '@/lib/zhipuAI';
-import type { AIOption, AIOptionsResponse, FlowStep, GuidedFlowState } from '@/types/aiOptions';
-import type { ProjectData } from '@/types/sop';
+import type { AIOption, AIOptionsResponse, FlowStep, GuidedFlowState, UserStory, TrackingEvent } from '@/types/aiOptions';
+import type { ProjectData, SpecData } from '@/types/sop';
 
 const initialFlowState: GuidedFlowState = {
   step: 'idle',
   userInput: '',
+  // Project 阶段
   selectedPersona: '',
   selectedScenario: '',
   selectedOutcome: '',
   selectedMetric: '',
   generatedPRD: '',
   generatedLoops: [],
+  // Spec 阶段
+  selectedFeatures: [],
+  selectedStories: [],
+  selectedTrackingEvents: [],
 };
 
-export function useAIGuidedFlow(updateProject: (updates: Partial<ProjectData>) => void) {
+export function useAIGuidedFlow(
+  updateProject: (updates: Partial<ProjectData>) => void,
+  updateSpec: (updates: Partial<SpecData>) => void
+) {
   const [flowState, setFlowState] = useState<GuidedFlowState>(initialFlowState);
   const [options, setOptions] = useState<AIOptionsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,7 +65,8 @@ export function useAIGuidedFlow(updateProject: (updates: Partial<ProjectData>) =
   }, [generateOptions]);
 
   const handleSelect = useCallback(async (selected: AIOption | AIOption[]) => {
-    const selectedOption = Array.isArray(selected) ? selected[0] : selected;
+    const isMultiple = Array.isArray(selected) && selected.length > 0;
+    const selectedOption = isMultiple ? selected[0] : (selected as AIOption);
     const value = selectedOption.label;
 
     switch (flowState.step) {
@@ -117,21 +126,93 @@ export function useAIGuidedFlow(updateProject: (updates: Partial<ProjectData>) =
               ...prev,
               generatedPRD: projectData.prd,
               generatedLoops: projectData.loops || [],
-              step: 'complete',
+              step: 'select-features',
             }));
+            
+            // 继续到 Spec 阶段 - 生成功能选项
+            const featuresResult = await generateOptions(
+              AI_GUIDED_PROMPTS.suggestFeatures(projectData.prd, projectData.loops || [])
+            );
+            if (featuresResult) setOptions(featuresResult);
           }
         } catch (err) {
           setError('生成完整项目失败');
         } finally {
           setIsLoading(false);
         }
+        break;
+
+      case 'select-features': {
+        const selectedFeatures = (selected as AIOption[]).map(o => o.label);
+        setFlowState((prev) => ({ ...prev, selectedFeatures, step: 'select-stories' }));
+        updateSpec({ featureList: selectedFeatures });
+        
+        const storiesResult = await generateOptions(
+          AI_GUIDED_PROMPTS.suggestUserStories(flowState.generatedPRD, selectedFeatures)
+        );
+        if (storiesResult) setOptions(storiesResult);
+        break;
+      }
+
+      case 'select-stories': {
+        const selectedStories: UserStory[] = (selected as AIOption[]).map(o => 
+          o.value || { asA: '', iWant: o.label, soThat: '' }
+        );
+        setFlowState((prev) => ({ ...prev, selectedStories, step: 'generating-states' }));
+        updateSpec({ userStories: selectedStories });
+        
+        // 自动生成状态机和文案 (无需选择)
+        setIsLoading(true);
+        setOptions(null);
+        try {
+          const statesPrompt = AI_GUIDED_PROMPTS.generateStatesAndCopy(
+            flowState.generatedPRD,
+            flowState.selectedFeatures,
+            flowState.selectedPersona
+          );
+          const statesResponse = await chatWithAI([{ role: 'user', content: statesPrompt }]);
+          const statesData = parseAIResponse<{ stateMachine: any; copyPack: any }>(statesResponse);
+          
+          if (statesData) {
+            updateSpec({
+              stateMachine: statesData.stateMachine,
+              copyPack: statesData.copyPack,
+            });
+          }
+          
+          setFlowState((prev) => ({ ...prev, step: 'select-tracking' }));
+          
+          // 继续生成埋点选项
+          const trackingResult = await generateOptions(
+            AI_GUIDED_PROMPTS.suggestTrackingEvents(flowState.selectedFeatures, selectedStories)
+          );
+          if (trackingResult) setOptions(trackingResult);
+        } catch (err) {
+          setError('生成状态机和文案失败');
+        } finally {
+          setIsLoading(false);
+        }
+        break;
+      }
+
+      case 'select-tracking': {
+        const selectedEvents: TrackingEvent[] = (selected as AIOption[]).map(o => 
+          o.value || { name: o.label, props: '', when: '' }
+        );
+        updateSpec({ trackingEvents: selectedEvents });
+        setFlowState((prev) => ({ 
+          ...prev, 
+          selectedTrackingEvents: selectedEvents, 
+          step: 'complete' 
+        }));
         setOptions(null);
         break;
+      }
 
       default:
         break;
     }
-  }, [flowState, updateProject, generateOptions]);
+  }, [flowState, updateProject, updateSpec, generateOptions]);
 
   const handleCustomInput = useCallback(async (value: string) => {
     // Treat custom input same as selected option
@@ -176,6 +257,24 @@ export function useAIGuidedFlow(updateProject: (updates: Partial<ProjectData>) =
           )
         );
         if (metricResult) setOptions(metricResult);
+        break;
+      case 'select-features':
+        const featuresResult = await generateOptions(
+          AI_GUIDED_PROMPTS.suggestFeatures(flowState.generatedPRD, flowState.generatedLoops)
+        );
+        if (featuresResult) setOptions(featuresResult);
+        break;
+      case 'select-stories':
+        const storiesResult = await generateOptions(
+          AI_GUIDED_PROMPTS.suggestUserStories(flowState.generatedPRD, flowState.selectedFeatures)
+        );
+        if (storiesResult) setOptions(storiesResult);
+        break;
+      case 'select-tracking':
+        const trackingResult = await generateOptions(
+          AI_GUIDED_PROMPTS.suggestTrackingEvents(flowState.selectedFeatures, flowState.selectedStories)
+        );
+        if (trackingResult) setOptions(trackingResult);
         break;
     }
   }, [flowState, generateOptions]);

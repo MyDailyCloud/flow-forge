@@ -187,7 +187,7 @@ export function useAIGuidedFlow(
             flowState.selectedFeatures,
             flowState.selectedPersona
           );
-          const statesResponse = await chatWithAI([{ role: 'user', content: statesPrompt }]);
+          const statesResponse = await aiService.sendMessage(statesPrompt);
           const statesData = parseAIResponse<{ stateMachine: any; copyPack: any }>(statesResponse);
           
           if (statesData) {
@@ -244,7 +244,7 @@ export function useAIGuidedFlow(
             flowState.selectedFeatures,
             flowState.selectedStories
           );
-          const routesResponse = await chatWithAI([{ role: 'user', content: routesPrompt }]);
+          const routesResponse = await aiService.sendMessage(routesPrompt);
           const routesData = parseAIResponse<{ routes: string }>(routesResponse);
           
           if (routesData) {
@@ -258,7 +258,7 @@ export function useAIGuidedFlow(
               flowState.selectedFeatures,
               value
             );
-            const dataModelResponse = await chatWithAI([{ role: 'user', content: dataModelPrompt }]);
+            const dataModelResponse = await aiService.sendMessage(dataModelPrompt);
             const dataModelData = parseAIResponse<{ dataModel: string }>(dataModelResponse);
             
             if (dataModelData) {
@@ -272,7 +272,7 @@ export function useAIGuidedFlow(
                 flowState.selectedFeatures,
                 flowState.generatedPRD
               );
-              const slicesResponse = await chatWithAI([{ role: 'user', content: slicesPrompt }]);
+              const slicesResponse = await aiService.sendMessage(slicesPrompt);
               const slicesData = parseAIResponse<{ slices: SliceTask[] }>(slicesResponse);
               
               if (slicesData) {
@@ -295,7 +295,7 @@ export function useAIGuidedFlow(
                   routes,
                   dataModel
                 );
-                const buildConfigResponse = await chatWithAI([{ role: 'user', content: buildConfigPrompt }]);
+                const buildConfigResponse = await aiService.sendMessage(buildConfigPrompt);
                 const buildConfigData = parseAIResponse<{ env: string; releaseNote: string }>(buildConfigResponse);
                 
                 if (buildConfigData) {
@@ -348,7 +348,7 @@ export function useAIGuidedFlow(
             flowState.selectedPersona,
             flowState.selectedOutcome
           );
-          const beforeAfterResponse = await chatWithAI([{ role: 'user', content: beforeAfterPrompt }]);
+          const beforeAfterResponse = await aiService.sendMessage(beforeAfterPrompt);
           const beforeAfterData = parseAIResponse<{ beforeAfter: any }>(beforeAfterResponse);
           
           if (beforeAfterData) {
@@ -367,7 +367,7 @@ export function useAIGuidedFlow(
               flowState.selectedOutcome,
               flowState.selectedFeatures
             );
-            const videoResponse = await chatWithAI([{ role: 'user', content: videoPrompt }]);
+            const videoResponse = await aiService.sendMessage(videoPrompt);
             const videoData = parseAIResponse<{ videoScript: any }>(videoResponse);
             
             if (videoData) {
@@ -386,7 +386,7 @@ export function useAIGuidedFlow(
                 flowState.selectedOutcome,
                 flowState.selectedScenario
               );
-              const longformResponse = await chatWithAI([{ role: 'user', content: longformPrompt }]);
+              const longformResponse = await aiService.sendMessage(longformPrompt);
               const longformData = parseAIResponse<{ longformOutline: any }>(longformResponse);
               
               if (longformData) {
@@ -458,7 +458,7 @@ export function useAIGuidedFlow(
             flowState.generatedDataModel,
             flowState.selectedFeatures
           );
-          const qualityResponse = await chatWithAI([{ role: 'user', content: qualityPrompt }]);
+          const qualityResponse = await aiService.sendMessage(qualityPrompt);
           const qualityData = parseAIResponse<{ 
             qualityChecklist: QualityChecklistData; 
             testCases: TestCase[]; 
@@ -520,7 +520,7 @@ export function useAIGuidedFlow(
             flowState.generatedLoops,
             `${flowState.generatedBeforeAfter}\n${flowState.generatedVideoScript}`
           );
-          const reviewResponse = await chatWithAI([{ role: 'user', content: reviewPrompt }]);
+          const reviewResponse = await aiService.sendMessage(reviewPrompt);
           const reviewData = parseAIResponse<{ 
             funnelTemplate: { stages: string[]; metricsToTrack: string[]; expectedBaseline: string }; 
             reviewQuestions: string[]; 
@@ -670,65 +670,6 @@ export function useAIGuidedFlow(
         break;
     }
   }, [flowState, generateOptions]);
-
-  // Helper functions for formatting Growth content
-  function formatBeforeAfterContent(data: any): string {
-    return `## Before/After 对比图
-
-### Before（使用前）
-**图片生成 Prompt：**
-\`\`\`
-${data.before?.prompt || ''}
-\`\`\`
-**场景说明：** ${data.before?.description || ''}
-
-### After（使用后）
-**图片生成 Prompt：**
-\`\`\`
-${data.after?.prompt || ''}
-\`\`\`
-**场景说明：** ${data.after?.description || ''}
-
-### 社交媒体配文
-${data.socialCopy || data.combined || ''}`;
-  }
-
-  function formatVideoScriptContent(data: any): string {
-    return `## 15秒短视频脚本
-
-### Hook（0-5s）
-**文案：** ${data.hook?.text || ''}
-**画面：** ${data.hook?.visual || ''}
-
-### Solution（5-12s）
-**文案：** ${data.solution?.text || ''}
-**画面：** ${data.solution?.visual || ''}
-
-### CTA（12-15s）
-**文案：** ${data.cta?.text || ''}
-**画面：** ${data.cta?.visual || ''}
-
-### 完整脚本
-${data.fullScript || ''}
-
-### 话题标签
-${(data.hashtags || []).map((t: string) => `#${t}`).join(' ')}`;
-  }
-
-  function formatLongformContent(data: any): string {
-    const sections = (data.sections || []).map((s: any) => 
-      `### ${s.heading}\n${(s.points || []).map((p: string) => `- ${p}`).join('\n')}\n*约 ${s.wordCount || 0} 字*`
-    ).join('\n\n');
-    
-    return `## ${data.title || '长文大纲'}
-
-**副标题：** ${data.subtitle || ''}
-
-${sections}
-
-**目标平台：** ${data.targetPlatform || '公众号/知乎'}
-**预计阅读时间：** ${data.estimatedReadTime || '5分钟'}`;
-  }
 
   return {
     flowState,

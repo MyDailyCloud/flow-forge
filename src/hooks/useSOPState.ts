@@ -1,125 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { SOPState, ProjectData, SpecData, BuildData, QualityChecklist, GrowthPack, ReviewData } from '@/types/sop';
-
-const STORAGE_KEY = 'sop_data';
-
-const initialState: SOPState = {
-  currentStep: 0,
-  project: {
-    persona: '',
-    scenario: '',
-    outcome: '',
-    northStarMetric: '',
-    constraints: '',
-    loops: [
-      { trigger: '', action: '', reward: '' },
-      { trigger: '', action: '', reward: '' },
-      { trigger: '', action: '', reward: '' },
-    ],
-    oneLinePrd: '',
-  },
-  spec: {
-    userStories: [
-      { asA: '', iWant: '', soThat: '' },
-      { asA: '', iWant: '', soThat: '' },
-      { asA: '', iWant: '', soThat: '' },
-    ],
-    featureList: ['', '', '', '', '', '', ''],
-    stateMachine: {
-      empty: '',
-      success: '',
-      failure: '',
-      noPermission: '',
-      offline: '',
-    },
-    copyPack: {
-      firstScreen: '',
-      guidance: '',
-      errorState: '',
-      emptyState: '',
-    },
-    trackingEvents: [
-      { name: '', props: '', when: '' },
-      { name: '', props: '', when: '' },
-      { name: '', props: '', when: '' },
-      { name: '', props: '', when: '' },
-      { name: '', props: '', when: '' },
-    ],
-  },
-  build: {
-    repo: '',
-    env: '',
-    routes: '',
-    dataModel: '',
-    sliceStatus: {
-      loop1: 'pending',
-      loop2: 'pending',
-      loop3: 'pending',
-    },
-    releaseNote: '',
-  },
-  quality: {
-    criticalPathWorks: false,
-    offlineHandled: false,
-    permissionsClear: false,
-    dataTraceable: false,
-    metricsWorking: false,
-  },
-  growth: {
-    beforeAfterImage: '',
-    shortVideoScript: '',
-    longformOutline: '',
-    downloadableAsset: '',
-    demoLink: '',
-  },
-  review: {
-    funnelMetrics: {
-      exposure: '',
-      reach: '',
-      activation: '',
-      retention: '',
-    },
-    biggestDrop: '',
-    nextExperiment: '',
-    nextWeekGoal: '',
-  },
-};
-
-// Load from localStorage
-function loadFromStorage(): SOPState {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Merge with initialState to handle new fields
-      return {
-        ...initialState,
-        ...parsed,
-        project: { ...initialState.project, ...parsed.project },
-        spec: { ...initialState.spec, ...parsed.spec },
-        build: { ...initialState.build, ...parsed.build },
-        quality: { ...initialState.quality, ...parsed.quality },
-        growth: { ...initialState.growth, ...parsed.growth },
-        review: { ...initialState.review, ...parsed.review },
-      };
-    }
-  } catch (e) {
-    console.error('Failed to load SOP data from localStorage:', e);
-  }
-  return initialState;
-}
+import { loadSOPState, saveSOPState, clearSOPState, getInitialState, exportSOPState } from '@/storage';
 
 export function useSOPState() {
-  const [state, setState] = useState<SOPState>(loadFromStorage);
+  const [state, setState] = useState<SOPState>(loadSOPState);
 
-  // Auto-save to localStorage with debounce
+  // Auto-save with debounce using storage service
   useEffect(() => {
     const timer = setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      } catch (e) {
-        console.error('Failed to save SOP data to localStorage:', e);
-      }
+      saveSOPState(state);
     }, 500);
     return () => clearTimeout(timer);
   }, [state]);
@@ -171,12 +60,12 @@ export function useSOPState() {
   }, []);
 
   const exportData = useCallback(() => {
-    return JSON.stringify(state, null, 2);
+    return exportSOPState(state);
   }, [state]);
 
   const resetState = useCallback(() => {
-    setState(initialState);
-    localStorage.removeItem(STORAGE_KEY);
+    setState(getInitialState());
+    clearSOPState();
   }, []);
 
   return {

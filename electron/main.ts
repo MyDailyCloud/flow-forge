@@ -1,5 +1,6 @@
 import { app, BrowserWindow, shell } from 'electron';
 import path from 'path';
+import { registerIpcHandlers } from './ipc/handlers';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
 if (require('electron-squirrel-startup')) {
@@ -25,6 +26,9 @@ function createWindow() {
     show: false,
     icon: path.join(__dirname, '../public/icon.png'),
   });
+
+  // Register IPC handlers
+  registerIpcHandlers(mainWindow);
 
   // Show window when ready to prevent visual flash
   mainWindow.once('ready-to-show', () => {

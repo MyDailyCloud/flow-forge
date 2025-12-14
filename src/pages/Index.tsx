@@ -1,4 +1,5 @@
-import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronLeft, ChevronRight, RotateCcw, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SOPSidebar } from '@/components/SOPSidebar';
 import { ExportPanel } from '@/components/ExportPanel';
@@ -8,11 +9,16 @@ import { StepBuild } from '@/components/steps/StepBuild';
 import { StepQuality } from '@/components/steps/StepQuality';
 import { StepGrowth } from '@/components/steps/StepGrowth';
 import { StepReview } from '@/components/steps/StepReview';
+import { AIKeyDialog } from '@/components/AIKeyDialog';
 import { useSOPState } from '@/hooks/useSOPState';
 import { SOP_STEPS } from '@/types/sop';
 import { useToast } from '@/hooks/use-toast';
+import { getApiKey } from '@/lib/zhipuAI';
 
 const Index = () => {
+  const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(!!getApiKey());
+
   const {
     state,
     setCurrentStep,
@@ -38,18 +44,40 @@ const Index = () => {
     }
   };
 
+  const openAIDialog = () => setIsAIDialogOpen(true);
+
   const renderCurrentStep = () => {
     switch (state.currentStep) {
       case 0:
-        return <StepProject data={state.project} onUpdate={updateProject} />;
+        return (
+          <StepProject
+            data={state.project}
+            onUpdate={updateProject}
+            onOpenAIDialog={openAIDialog}
+          />
+        );
       case 1:
-        return <StepSpec data={state.spec} onUpdate={updateSpec} />;
+        return (
+          <StepSpec
+            data={state.spec}
+            prd={state.project.oneLinePrd}
+            onUpdate={updateSpec}
+            onOpenAIDialog={openAIDialog}
+          />
+        );
       case 2:
         return <StepBuild data={state.build} onUpdate={updateBuild} />;
       case 3:
         return <StepQuality data={state.quality} onUpdate={updateQuality} />;
       case 4:
-        return <StepGrowth data={state.growth} onUpdate={updateGrowth} />;
+        return (
+          <StepGrowth
+            data={state.growth}
+            context={state.project.oneLinePrd}
+            onUpdate={updateGrowth}
+            onOpenAIDialog={openAIDialog}
+          />
+        );
       case 5:
         return <StepReview data={state.review} onUpdate={updateReview} />;
       default:
@@ -76,6 +104,15 @@ const Index = () => {
               </h1>
             </div>
             <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsAIDialogOpen(true)}
+                className={hasApiKey ? 'text-primary border-primary/50' : ''}
+              >
+                <Sparkles className="w-4 h-4 mr-1" />
+                AI 设置
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
@@ -136,6 +173,13 @@ const Index = () => {
           </div>
         </footer>
       </main>
+
+      {/* AI Key Dialog */}
+      <AIKeyDialog
+        isOpen={isAIDialogOpen}
+        onClose={() => setIsAIDialogOpen(false)}
+        onKeySet={() => setHasApiKey(true)}
+      />
 
       {/* Ambient glow effect */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">

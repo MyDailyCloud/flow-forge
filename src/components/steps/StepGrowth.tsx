@@ -2,14 +2,18 @@ import { Image, Video, FileText, Package, Link2, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { AIAssistButton } from '@/components/AIAssistButton';
+import { SOP_PROMPTS } from '@/lib/zhipuAI';
 import type { GrowthPack } from '@/types/sop';
 
 interface StepGrowthProps {
   data: GrowthPack;
+  context: string;
   onUpdate: (updates: Partial<GrowthPack>) => void;
+  onOpenAIDialog: () => void;
 }
 
-export function StepGrowth({ data, onUpdate }: StepGrowthProps) {
+export function StepGrowth({ data, context, onUpdate, onOpenAIDialog }: StepGrowthProps) {
   const items = [
     {
       key: 'beforeAfterImage' as const,
@@ -50,13 +54,62 @@ export function StepGrowth({ data, onUpdate }: StepGrowthProps) {
 
   const filledCount = Object.values(data).filter((v) => v.trim() !== '').length;
 
+  const handleAIGenerate = (result: string) => {
+    // Parse the AI response and fill in the fields
+    const lines = result.split('\n');
+    let currentSection = '';
+    let currentContent: string[] = [];
+
+    const updates: Partial<GrowthPack> = {};
+
+    const saveSection = () => {
+      if (currentSection && currentContent.length > 0) {
+        const content = currentContent.join('\n').trim();
+        if (currentSection.includes('对比') || currentSection.includes('Before')) {
+          updates.beforeAfterImage = content;
+        } else if (currentSection.includes('视频') || currentSection.includes('脚本')) {
+          updates.shortVideoScript = content;
+        } else if (currentSection.includes('长文') || currentSection.includes('大纲')) {
+          updates.longformOutline = content;
+        }
+      }
+    };
+
+    for (const line of lines) {
+      if (line.match(/^[1-3][\.\、]/) || line.match(/^#+\s/)) {
+        saveSection();
+        currentSection = line;
+        currentContent = [];
+      } else if (line.trim()) {
+        currentContent.push(line);
+      }
+    }
+    saveSection();
+
+    if (Object.keys(updates).length > 0) {
+      onUpdate(updates);
+    } else {
+      // If parsing failed, put everything in the first field
+      onUpdate({ beforeAfterImage: result });
+    }
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
-      <div>
-        <h2 className="text-2xl font-bold mb-2">增长物料生产线</h2>
-        <p className="text-muted-foreground">
-          每次迭代都变成"可传播内容"
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold mb-2">增长物料生产线</h2>
+          <p className="text-muted-foreground">
+            每次迭代都变成"可传播内容"
+          </p>
+        </div>
+        <AIAssistButton
+          prompt={SOP_PROMPTS.analyzeGrowth(context)}
+          onResult={handleAIGenerate}
+          onOpenKeyDialog={onOpenAIDialog}
+          disabled={!context}
+          label="AI 生成物料"
+        />
       </div>
 
       {/* 5-piece Kit Indicator */}

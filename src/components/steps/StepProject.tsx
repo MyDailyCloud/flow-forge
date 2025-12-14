@@ -2,18 +2,42 @@ import { Target, Users, Zap, Gauge, AlertTriangle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { AIAssistButton } from '@/components/AIAssistButton';
+import { SOP_PROMPTS } from '@/lib/zhipuAI';
 import type { ProjectData, Loop } from '@/types/sop';
 
 interface StepProjectProps {
   data: ProjectData;
   onUpdate: (updates: Partial<ProjectData>) => void;
+  onOpenAIDialog: () => void;
 }
 
-export function StepProject({ data, onUpdate }: StepProjectProps) {
+export function StepProject({ data, onUpdate, onOpenAIDialog }: StepProjectProps) {
   const updateLoop = (index: number, field: keyof Loop, value: string) => {
     const newLoops = [...data.loops];
     newLoops[index] = { ...newLoops[index], [field]: value };
     onUpdate({ loops: newLoops });
+  };
+
+  const handleGeneratePRD = (result: string) => {
+    onUpdate({ oneLinePrd: result.trim() });
+  };
+
+  const handleGenerateLoops = (result: string) => {
+    try {
+      const loops = JSON.parse(result);
+      if (Array.isArray(loops) && loops.length >= 3) {
+        onUpdate({
+          loops: loops.slice(0, 3).map((l: any) => ({
+            trigger: l.trigger || '',
+            action: l.action || '',
+            reward: l.reward || '',
+          })),
+        });
+      }
+    } catch {
+      // If not valid JSON, ignore
+    }
   };
 
   return (
@@ -98,10 +122,21 @@ export function StepProject({ data, onUpdate }: StepProjectProps) {
 
       {/* 3 Loops */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">3 个最小闭环</h3>
-        <p className="text-sm text-muted-foreground">
-          触发（用户何时来）→ 行动（做什么）→ 回报（立即得到什么）
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">3 个最小闭环</h3>
+            <p className="text-sm text-muted-foreground">
+              触发（用户何时来）→ 行动（做什么）→ 回报（立即得到什么）
+            </p>
+          </div>
+          <AIAssistButton
+            prompt={SOP_PROMPTS.suggestLoops(data.oneLinePrd || `${data.persona} ${data.scenario} ${data.outcome}`)}
+            onResult={handleGenerateLoops}
+            onOpenKeyDialog={onOpenAIDialog}
+            disabled={!data.persona && !data.scenario && !data.outcome && !data.oneLinePrd}
+            label="AI 建议"
+          />
+        </div>
 
         {data.loops.map((loop, index) => (
           <div
@@ -149,14 +184,23 @@ export function StepProject({ data, onUpdate }: StepProjectProps) {
 
       {/* One-liner PRD Output */}
       <div className="space-y-2">
-        <Label>一句话 PRD</Label>
+        <div className="flex items-center justify-between">
+          <Label>一句话 PRD</Label>
+          <AIAssistButton
+            prompt={SOP_PROMPTS.generatePRD(data.persona, data.scenario, data.outcome)}
+            onResult={handleGeneratePRD}
+            onOpenKeyDialog={onOpenAIDialog}
+            disabled={!data.persona && !data.scenario && !data.outcome}
+            label="AI 生成"
+          />
+        </div>
         <Textarea
           placeholder="完整的一句话产品定义..."
           value={data.oneLinePrd}
           onChange={(e) => onUpdate({ oneLinePrd: e.target.value })}
           className="min-h-[80px]"
         />
-        {data.persona && data.scenario && data.outcome && (
+        {data.persona && data.scenario && data.outcome && !data.oneLinePrd && (
           <p className="text-xs text-muted-foreground mt-2">
             💡 建议: "为【{data.persona}】在【{data.scenario}】提供【{data.outcome}】，
             用【关键机制】在 7 天内做到【{data.northStarMetric || '指标'}】。"

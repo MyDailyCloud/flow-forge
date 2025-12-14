@@ -29,7 +29,8 @@ const FLOW_STEPS: StepInfo[] = [
   { id: 'select-tech-stack', label: '技术栈', phase: 'build' },
   { id: 'generating-routes', label: '路由', phase: 'build' },
   { id: 'generating-data-model', label: '数据', phase: 'build' },
-  { id: 'confirm-build', label: '配置', phase: 'build' },
+  { id: 'generating-slices', label: '切片', phase: 'build' },
+  { id: 'confirm-build', label: '确认', phase: 'build' },
   // Growth 阶段
   { id: 'generating-before-after', label: '对比图', phase: 'growth' },
   { id: 'generating-video-script', label: '视频', phase: 'growth' },

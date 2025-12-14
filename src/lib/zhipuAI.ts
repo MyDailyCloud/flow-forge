@@ -330,6 +330,42 @@ PRD：${prd}
 }
 使用 Markdown 格式描述表结构。只返回 JSON。`,
 
+  // Build 阶段 - 生成切片任务规划
+  generateSlicePlan: (loops: Array<{ trigger: string; action: string; reward: string }>, features: string[], prd: string) => `
+根据行为闭环和功能列表，规划 3 个垂直切片任务：
+闭环：${JSON.stringify(loops)}
+功能：${features.join('、')}
+PRD：${prd}
+
+每个切片对应一个闭环，包含具体的开发任务。
+必须严格返回以下 JSON 格式：
+{
+  "slices": [
+    {
+      "loop": 1,
+      "name": "切片名称（如：核心注册流程）",
+      "description": "切片目标描述",
+      "tasks": ["具体开发任务1", "具体开发任务2", "具体开发任务3"],
+      "estimatedTime": "预估时间（如：2天）"
+    },
+    {
+      "loop": 2,
+      "name": "切片名称",
+      "description": "切片目标描述",
+      "tasks": ["具体开发任务1", "具体开发任务2", "具体开发任务3"],
+      "estimatedTime": "预估时间"
+    },
+    {
+      "loop": 3,
+      "name": "切片名称",
+      "description": "切片目标描述",
+      "tasks": ["具体开发任务1", "具体开发任务2", "具体开发任务3"],
+      "estimatedTime": "预估时间"
+    }
+  ]
+}
+只返回 JSON。`,
+
   // Build 阶段 - 生成完整 Build 配置
   generateBuildConfig: (prd: string, features: string[], techStack: string, routes: string, dataModel: string) => `
 根据以下信息生成环境配置和发布说明：

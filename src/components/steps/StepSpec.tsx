@@ -2,14 +2,18 @@ import { BookOpen, List, GitBranch, FileText, Activity } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { AIAssistButton } from '@/components/AIAssistButton';
+import { SOP_PROMPTS } from '@/lib/zhipuAI';
 import type { SpecData, UserStory, TrackingEvent } from '@/types/sop';
 
 interface StepSpecProps {
   data: SpecData;
+  prd: string;
   onUpdate: (updates: Partial<SpecData>) => void;
+  onOpenAIDialog: () => void;
 }
 
-export function StepSpec({ data, onUpdate }: StepSpecProps) {
+export function StepSpec({ data, prd, onUpdate, onOpenAIDialog }: StepSpecProps) {
   const updateUserStory = (index: number, field: keyof UserStory, value: string) => {
     const newStories = [...data.userStories];
     newStories[index] = { ...newStories[index], [field]: value };
@@ -28,6 +32,57 @@ export function StepSpec({ data, onUpdate }: StepSpecProps) {
     onUpdate({ trackingEvents: newEvents });
   };
 
+  const handleGenerateStories = (result: string) => {
+    try {
+      const stories = JSON.parse(result);
+      if (Array.isArray(stories) && stories.length >= 3) {
+        onUpdate({
+          userStories: stories.slice(0, 3).map((s: any) => ({
+            asA: s.asA || '',
+            iWant: s.iWant || '',
+            soThat: s.soThat || '',
+          })),
+        });
+      }
+    } catch {
+      // If not valid JSON, ignore
+    }
+  };
+
+  const handleGenerateFeatures = (result: string) => {
+    try {
+      const features = JSON.parse(result);
+      if (Array.isArray(features)) {
+        const newFeatures = [...data.featureList];
+        features.slice(0, 7).forEach((f: string, i: number) => {
+          newFeatures[i] = f;
+        });
+        onUpdate({ featureList: newFeatures });
+      }
+    } catch {
+      // If not valid JSON, ignore
+    }
+  };
+
+  const handleGenerateTracking = (result: string) => {
+    try {
+      const events = JSON.parse(result);
+      if (Array.isArray(events) && events.length >= 5) {
+        onUpdate({
+          trackingEvents: events.slice(0, 5).map((e: any) => ({
+            name: e.name || '',
+            props: e.props || '',
+            when: e.when || '',
+          })),
+        });
+      }
+    } catch {
+      // If not valid JSON, ignore
+    }
+  };
+
+  const featuresString = data.featureList.filter(f => f).join(', ');
+
   return (
     <div className="space-y-8 animate-fade-in">
       <div>
@@ -39,9 +94,18 @@ export function StepSpec({ data, onUpdate }: StepSpecProps) {
 
       {/* User Stories */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">用户故事 (最多3条)</h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-semibold">用户故事 (最多3条)</h3>
+          </div>
+          <AIAssistButton
+            prompt={SOP_PROMPTS.generateUserStories(prd, featuresString)}
+            onResult={handleGenerateStories}
+            onOpenKeyDialog={onOpenAIDialog}
+            disabled={!prd}
+            label="AI 生成"
+          />
         </div>
         
         {data.userStories.map((story, index) => (
@@ -85,9 +149,18 @@ export function StepSpec({ data, onUpdate }: StepSpecProps) {
 
       {/* Feature List */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <List className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">功能列表 (不超过7个)</h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <List className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-semibold">功能列表 (不超过7个)</h3>
+          </div>
+          <AIAssistButton
+            prompt={SOP_PROMPTS.suggestFeatures(prd)}
+            onResult={handleGenerateFeatures}
+            onOpenKeyDialog={onOpenAIDialog}
+            disabled={!prd}
+            label="AI 建议"
+          />
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -197,9 +270,18 @@ export function StepSpec({ data, onUpdate }: StepSpecProps) {
 
       {/* Tracking Events */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Activity className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">埋点事件</h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Activity className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-semibold">埋点事件</h3>
+          </div>
+          <AIAssistButton
+            prompt={SOP_PROMPTS.suggestTracking(featuresString || prd)}
+            onResult={handleGenerateTracking}
+            onOpenKeyDialog={onOpenAIDialog}
+            disabled={!prd && !featuresString}
+            label="AI 建议"
+          />
         </div>
         
         <div className="space-y-3">

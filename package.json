@@ -1,7 +1,10 @@
 {
   "name": "vite_react_shadcn_ts",
   "private": true,
+  "description": "SOP Builder Application",
+  "author": "MyDailyCloud",
   "version": "0.0.0",
+  "main": "electron/main.js",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -45,8 +48,6 @@
     "cmdk": "^1.1.1",
     "concurrently": "^9.2.1",
     "date-fns": "^3.6.0",
-    "electron": "^33.4.11",
-    "electron-builder": "^25.1.8",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
@@ -69,6 +70,8 @@
     "@eslint/js": "^9.32.0",
     "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^22.16.5",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",

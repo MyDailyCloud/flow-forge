@@ -1,5 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { SOPState, ProjectData, SpecData, BuildData, QualityChecklist, GrowthPack, ReviewData } from '@/types/sop';
+
+const STORAGE_KEY = 'sop_data';
 
 const initialState: SOPState = {
   currentStep: 0,
@@ -83,8 +85,44 @@ const initialState: SOPState = {
   },
 };
 
+// Load from localStorage
+function loadFromStorage(): SOPState {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Merge with initialState to handle new fields
+      return {
+        ...initialState,
+        ...parsed,
+        project: { ...initialState.project, ...parsed.project },
+        spec: { ...initialState.spec, ...parsed.spec },
+        build: { ...initialState.build, ...parsed.build },
+        quality: { ...initialState.quality, ...parsed.quality },
+        growth: { ...initialState.growth, ...parsed.growth },
+        review: { ...initialState.review, ...parsed.review },
+      };
+    }
+  } catch (e) {
+    console.error('Failed to load SOP data from localStorage:', e);
+  }
+  return initialState;
+}
+
 export function useSOPState() {
-  const [state, setState] = useState<SOPState>(initialState);
+  const [state, setState] = useState<SOPState>(loadFromStorage);
+
+  // Auto-save to localStorage with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.error('Failed to save SOP data to localStorage:', e);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [state]);
 
   const setCurrentStep = useCallback((step: number) => {
     setState(prev => ({ ...prev, currentStep: step }));
@@ -138,6 +176,7 @@ export function useSOPState() {
 
   const resetState = useCallback(() => {
     setState(initialState);
+    localStorage.removeItem(STORAGE_KEY);
   }, []);
 
   return {

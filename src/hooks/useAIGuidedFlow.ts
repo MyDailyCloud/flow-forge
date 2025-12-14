@@ -1,6 +1,9 @@
 import { useState, useCallback } from 'react';
-import { chatWithAI, getApiKey } from '@/lib/zhipuAI';
-import { AI_GUIDED_PROMPTS, parseAIResponse } from '@/lib/zhipuAI';
+import { aiService } from '@/services';
+import { hasApiKey } from '@/storage';
+import { AI_GUIDED_PROMPTS } from '@/api/prompts';
+import { parseAIResponse } from '@/api/aiClient';
+import { formatBeforeAfterContent, formatVideoScriptContent, formatLongformContent } from '@/services/formatters';
 import type { AIOption, AIOptionsResponse, FlowStep, GuidedFlowState, UserStory, TrackingEvent, SliceTask, QualityChecklistData, TestCase, ReviewTemplate } from '@/types/aiOptions';
 import type { ProjectData, SpecData, BuildData, GrowthPack, QualityChecklist, ReviewData } from '@/types/sop';
 
@@ -52,7 +55,7 @@ export function useAIGuidedFlow(
   const [error, setError] = useState<string | null>(null);
 
   const generateOptions = useCallback(async (prompt: string): Promise<AIOptionsResponse | null> => {
-    if (!getApiKey()) {
+    if (!hasApiKey()) {
       setError('请先设置 API Key');
       return null;
     }
@@ -61,14 +64,7 @@ export function useAIGuidedFlow(
       setIsLoading(true);
       setError(null);
 
-      const response = await chatWithAI([{ role: 'user', content: prompt }]);
-      const parsed = parseAIResponse<AIOptionsResponse>(response);
-      
-      if (!parsed || !parsed.options) {
-        throw new Error('AI 返回格式错误');
-      }
-
-      return parsed;
+      return await aiService.generateOptions(prompt);
     } catch (err) {
       setError(err instanceof Error ? err.message : '生成失败');
       return null;
@@ -136,8 +132,7 @@ export function useAIGuidedFlow(
             flowState.selectedOutcome,
             value
           );
-          const response = await chatWithAI([{ role: 'user', content: fullProjectPrompt }]);
-          const projectData = parseAIResponse<{ prd: string; loops: any[] }>(response);
+          const projectData = await aiService.sendAndParse<{ prd: string; loops: any[] }>(fullProjectPrompt);
           
           if (projectData) {
             updateProject({

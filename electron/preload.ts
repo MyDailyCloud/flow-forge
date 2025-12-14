@@ -14,11 +14,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
   maximize: () => ipcRenderer.send('window-maximize'),
   close: () => ipcRenderer.send('window-close'),
   
-  // File operations (for future use)
+  // File operations
   saveFile: (data: string, filename: string) => 
     ipcRenderer.invoke('save-file', data, filename),
   openFile: () => 
     ipcRenderer.invoke('open-file'),
+  exportToPath: (data: string, defaultFilename: string) =>
+    ipcRenderer.invoke('export-to-path', data, defaultFilename),
+    
+  // Advanced file operations
+  getUserDataPath: () => 
+    ipcRenderer.invoke('get-user-data-path'),
+  fileExists: (filePath: string) =>
+    ipcRenderer.invoke('file-exists', filePath),
+  readFile: (filePath: string) =>
+    ipcRenderer.invoke('read-file', filePath),
+  writeFile: (filePath: string, data: string) =>
+    ipcRenderer.invoke('write-file', filePath, data),
+  deleteFile: (filePath: string) =>
+    ipcRenderer.invoke('delete-file', filePath),
 });
 
 // Type definitions for the exposed API
@@ -32,6 +46,12 @@ declare global {
       close: () => void;
       saveFile: (data: string, filename: string) => Promise<boolean>;
       openFile: () => Promise<string | null>;
+      exportToPath: (data: string, defaultFilename: string) => Promise<{ success: boolean; path: string | null; error?: string }>;
+      getUserDataPath: () => Promise<string>;
+      fileExists: (filePath: string) => Promise<boolean>;
+      readFile: (filePath: string) => Promise<string | null>;
+      writeFile: (filePath: string, data: string) => Promise<boolean>;
+      deleteFile: (filePath: string) => Promise<boolean>;
     };
   }
 }

@@ -22,7 +22,7 @@ mac:
       arch:
         - x64
         - arm64
-  icon: public/favicon.ico
+  icon: public/icon.png
   hardenedRuntime: true
   gatekeeperAssess: false
 
@@ -34,7 +34,7 @@ win:
     - target: portable
       arch:
         - x64
-  icon: public/favicon.ico
+  icon: public/icon.png
   artifactName: ${productName}-Setup-${version}.${ext}
 
 linux:
@@ -46,7 +46,7 @@ linux:
       arch:
         - x64
   category: Office
-  icon: public/favicon.ico
+  icon: public/icon.png
   artifactName: ${productName}-${version}.${ext}
 
 nsis:

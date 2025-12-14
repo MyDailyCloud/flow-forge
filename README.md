@@ -1,73 +1,129 @@
-# Welcome to your Lovable project
+# 🚀 SOP Builder - 高产工作流构建器
 
-## Project info
+[English](#english) | [中文](#中文)
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## 中文
 
-There are several ways of editing your application.
+AI 驱动的产品开发工作流工具，从想法到上线只需一天。
 
-**Use Lovable**
+### ✨ 功能特性
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+#### 6 阶段 SOP 工作流
 
-Changes made via Lovable will be committed automatically to this repo.
+| 阶段 | 名称 | 核心输出 |
+|------|------|----------|
+| **SOP0** | 项目启动 | 目标人群、使用场景、预期结果、北极星指标 |
+| **SOP1** | 问题→方案 | 功能列表、用户故事、状态机设计、埋点规划 |
+| **SOP2** | AI辅助开发 | 技术栈选型、路由设计、数据模型、切片任务 |
+| **SOP3** | 质量与上线 | 质量检查清单、测试用例、上线检查表 |
+| **SOP4** | 增长物料 | 对比图Prompt、视频脚本、长文大纲 |
+| **SOP5** | 数据复盘 | 漏斗分析、实验假设、目标设定 |
 
-**Use your preferred IDE**
+#### AI 端到端引导
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- 🤖 **23步自动化流程** - AI 引导完成全部产品设计环节
+- 🧠 **智谱 GLM-4 API 集成** - 强大的中文理解与生成能力
+- ⚡ **一键生成** - 从想法到完整产品设计方案
+- 💾 **本地存储** - 数据自动保存在浏览器本地
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 📦 下载安装
 
-Follow these steps:
+从 [Releases](../../releases) 页面下载适合你系统的版本：
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+| 平台 | 文件 |
+|------|------|
+| Windows | `SOP-Builder-Setup-x.x.x.exe` 或 `SOP-Builder-x.x.x-portable.exe` |
+| macOS | `SOP-Builder-x.x.x.dmg` 或 `SOP-Builder-x.x.x-mac.zip` |
+| Linux | `SOP-Builder-x.x.x.AppImage` 或 `sop-builder_x.x.x_amd64.deb` |
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 🛠 本地开发
 
-# Step 3: Install the necessary dependencies.
-npm i
+```bash
+# 安装依赖
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Web 开发模式
 npm run dev
+
+# Electron 开发模式
+npm run electron:dev
+
+# 构建 Electron 应用
+npm run electron:build
 ```
 
-**Edit a file directly in GitHub**
+### 🏗 技术栈
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- **前端框架**: React 18 + TypeScript
+- **构建工具**: Vite
+- **样式方案**: Tailwind CSS + shadcn/ui
+- **桌面框架**: Electron
+- **AI 接口**: 智谱 GLM-4
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## English
 
-## What technologies are used for this project?
+AI-powered product development workflow tool - from idea to launch in just one day.
 
-This project is built with:
+### ✨ Features
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+#### 6-Stage SOP Workflow
 
-## How can I deploy this project?
+| Stage | Name | Core Output |
+|-------|------|-------------|
+| **SOP0** | Project Kickoff | Target users, scenarios, expected results, North Star metrics |
+| **SOP1** | Problem → Solution | Feature list, user stories, state machine, analytics plan |
+| **SOP2** | AI-Assisted Dev | Tech stack, routing, data models, task breakdown |
+| **SOP3** | Quality & Launch | Quality checklist, test cases, launch checklist |
+| **SOP4** | Growth Materials | Comparison prompts, video scripts, article outlines |
+| **SOP5** | Data Review | Funnel analysis, experiment hypotheses, goal setting |
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+#### End-to-End AI Guidance
 
-## Can I connect a custom domain to my Lovable project?
+- 🤖 **23-Step Automated Flow** - AI guides you through the entire product design process
+- 🧠 **Zhipu GLM-4 Integration** - Powerful Chinese language understanding
+- ⚡ **One-Click Generation** - From idea to complete product design
+- 💾 **Local Storage** - Data automatically saved in browser
 
-Yes, you can!
+### 📦 Download
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Download from [Releases](../../releases) page:
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+| Platform | File |
+|----------|------|
+| Windows | `SOP-Builder-Setup-x.x.x.exe` or `SOP-Builder-x.x.x-portable.exe` |
+| macOS | `SOP-Builder-x.x.x.dmg` or `SOP-Builder-x.x.x-mac.zip` |
+| Linux | `SOP-Builder-x.x.x.AppImage` or `sop-builder_x.x.x_amd64.deb` |
+
+### 🛠 Local Development
+
+```bash
+# Install dependencies
+npm install
+
+# Web development mode
+npm run dev
+
+# Electron development mode
+npm run electron:dev
+
+# Build Electron app
+npm run electron:build
+```
+
+### 🏗 Tech Stack
+
+- **Frontend**: React 18 + TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Desktop**: Electron
+- **AI**: Zhipu GLM-4
+
+---
+
+## 📄 License
+
+MIT License

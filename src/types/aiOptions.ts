@@ -32,12 +32,18 @@ export type FlowStep =
   | 'generating-data-model'
   | 'generating-slices'
   | 'confirm-build'
+  // Quality 阶段
+  | 'generating-quality-checklist'
+  | 'confirm-quality'
   // Growth 阶段
   | 'generating-before-after'
   | 'generating-video-script'
   | 'generating-longform'
   | 'select-downloadable'
   | 'confirm-growth'
+  // Review 阶段
+  | 'generating-review-template'
+  | 'confirm-review'
   | 'complete';
 
 export interface SliceTask {
@@ -58,6 +64,28 @@ export interface TrackingEvent {
   name: string;
   props: string;
   when: string;
+}
+
+export interface QualityChecklistData {
+  criticalPath: string;
+  offlineScenarios: string;
+  permissionChecks: string;
+  dataTracing: string;
+  metricsValidation: string;
+}
+
+export interface TestCase {
+  name: string;
+  steps: string[];
+  expected: string;
+}
+
+export interface ReviewTemplate {
+  funnelStages: string[];
+  metricsToTrack: string[];
+  expectedBaseline: string;
+  reviewQuestions: string[];
+  retrospectivePrompts: string[];
 }
 
 export interface GuidedFlowState {
@@ -81,9 +109,15 @@ export interface GuidedFlowState {
   generatedSlices: SliceTask[];
   generatedEnv: string;
   generatedReleaseNote: string;
+  // Quality 阶段
+  generatedQualityChecklist: QualityChecklistData | null;
+  generatedTestCases: TestCase[];
+  generatedLaunchChecklist: string[];
   // Growth 阶段
   generatedBeforeAfter: string;
   generatedVideoScript: string;
   generatedLongformOutline: string;
   selectedDownloadable: string;
+  // Review 阶段
+  generatedReviewTemplate: ReviewTemplate | null;
 }

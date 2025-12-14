@@ -474,6 +474,70 @@ PRD：${prd}
   ]
 }
 只返回 JSON。`,
+
+  // Quality 阶段 - 生成质量检查清单和测试用例
+  generateQualityChecklist: (prd: string, routes: string, dataModel: string, features: string[]) => `
+根据以下产品信息生成质量检查清单和测试建议：
+PRD：${prd}
+路由设计：${routes}
+数据模型：${dataModel}
+功能列表：${features.join('、')}
+
+必须严格返回以下 JSON 格式：
+{
+  "qualityChecklist": {
+    "criticalPath": "关键路径描述和测试点（用户核心流程能否走通）",
+    "offlineScenarios": "离线场景处理建议（无网络时的体验）",
+    "permissionChecks": "权限检查要点（登录态、角色权限等）",
+    "dataTracing": "数据追踪验证点（数据流向是否正确）",
+    "metricsValidation": "埋点验证方法（如何确认埋点生效）"
+  },
+  "testCases": [
+    {"name": "核心流程测试", "steps": ["步骤1", "步骤2", "步骤3"], "expected": "预期结果"},
+    {"name": "边界条件测试", "steps": ["步骤1", "步骤2"], "expected": "预期结果"},
+    {"name": "异常场景测试", "steps": ["步骤1", "步骤2"], "expected": "预期结果"}
+  ],
+  "launchChecklist": [
+    "确认生产环境配置正确",
+    "确认数据库迁移完成",
+    "确认埋点代码已部署",
+    "确认监控告警已配置",
+    "确认回滚方案已准备"
+  ]
+}
+只返回 JSON。`,
+
+  // Review 阶段 - 生成数据复盘模板
+  generateReviewTemplate: (prd: string, metric: string, loops: Array<{ trigger: string; action: string; reward: string }>, growthMaterials: string) => `
+根据以下产品信息生成数据复盘模板：
+PRD：${prd}
+北极星指标：${metric}
+行为闭环：${JSON.stringify(loops)}
+增长物料：${growthMaterials}
+
+必须严格返回以下 JSON 格式：
+{
+  "funnelTemplate": {
+    "stages": ["曝光", "触达", "激活", "留存"],
+    "metricsToTrack": ["UV/PV", "点击率", "转化率", "次日留存"],
+    "expectedBaseline": "基于行业标准的预期基线描述"
+  },
+  "reviewQuestions": [
+    "最大的漏斗掉落发生在哪个环节？",
+    "用户在哪个步骤流失最多？",
+    "哪个渠道的转化效果最好？",
+    "下一个实验假设是什么？",
+    "下周的优化目标应该是什么？"
+  ],
+  "retrospectivePrompts": [
+    "本周做得好的地方",
+    "本周需要改进的地方",
+    "下周要尝试的新事物",
+    "需要停止做的事情",
+    "学到的关键教训"
+  ]
+}
+只返回 JSON。`,
 };
 
 // SOP 相关的 AI 提示词

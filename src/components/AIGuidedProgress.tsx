@@ -10,7 +10,7 @@ interface AIGuidedProgressProps {
 interface StepInfo {
   id: FlowStep;
   label: string;
-  phase: 'project' | 'spec' | 'build' | 'growth';
+  phase: 'project' | 'spec' | 'build' | 'quality' | 'growth' | 'review';
 }
 
 const FLOW_STEPS: StepInfo[] = [
@@ -31,19 +31,27 @@ const FLOW_STEPS: StepInfo[] = [
   { id: 'generating-data-model', label: '数据', phase: 'build' },
   { id: 'generating-slices', label: '切片', phase: 'build' },
   { id: 'confirm-build', label: '确认', phase: 'build' },
+  // Quality 阶段
+  { id: 'generating-quality-checklist', label: '检查', phase: 'quality' },
+  { id: 'confirm-quality', label: '确认', phase: 'quality' },
   // Growth 阶段
   { id: 'generating-before-after', label: '对比图', phase: 'growth' },
   { id: 'generating-video-script', label: '视频', phase: 'growth' },
   { id: 'generating-longform', label: '长文', phase: 'growth' },
   { id: 'select-downloadable', label: '资产', phase: 'growth' },
-  { id: 'confirm-growth', label: '完成', phase: 'growth' },
+  { id: 'confirm-growth', label: '确认', phase: 'growth' },
+  // Review 阶段
+  { id: 'generating-review-template', label: '模板', phase: 'review' },
+  { id: 'confirm-review', label: '完成', phase: 'review' },
 ];
 
 const PHASE_LABELS = {
   project: 'Project',
   spec: 'Spec',
   build: 'Build',
+  quality: 'Quality',
   growth: 'Growth',
+  review: 'Review',
 };
 
 export function AIGuidedProgress({ currentStep, isLoading }: AIGuidedProgressProps) {
@@ -51,7 +59,7 @@ export function AIGuidedProgress({ currentStep, isLoading }: AIGuidedProgressPro
   const currentPhase = FLOW_STEPS.find((s) => s.id === currentStep)?.phase;
 
   // Group steps by phase
-  const phases = ['project', 'spec', 'build', 'growth'] as const;
+  const phases = ['project', 'spec', 'build', 'quality', 'growth', 'review'] as const;
 
   return (
     <div className="space-y-3">

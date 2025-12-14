@@ -3,7 +3,7 @@
  * 负责与智谱 AI API 的通信
  */
 
-const ZHIPU_API_URL = 'https://open.bigmodel.cn/api/coding/paas/v4/chat/completions';
+import { getBaseUrl } from '@/storage';
 
 export interface Message {
   role: 'system' | 'user' | 'assistant';
@@ -38,8 +38,9 @@ export async function sendChatRequest(
   } = {}
 ): Promise<Response> {
   const { model = 'GLM-4.6', stream = false } = options;
+  const apiUrl = getBaseUrl();
 
-  const response = await fetch(ZHIPU_API_URL, {
+  const response = await fetch(apiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

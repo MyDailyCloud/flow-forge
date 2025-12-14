@@ -17,6 +17,10 @@ export {
   setApiKey,
   removeApiKey,
   hasApiKey,
+  getBaseUrl,
+  setBaseUrl,
+  resetBaseUrl,
+  getDefaultBaseUrl,
 } from './apiKeyStorage';
 
 export {

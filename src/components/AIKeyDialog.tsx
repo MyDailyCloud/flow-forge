@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getApiKey, setApiKey, removeApiKey } from '@/lib/zhipuAI';
-import { Sparkles, Key, X, Check } from 'lucide-react';
+import { getApiKey, setApiKey, removeApiKey, getBaseUrl, setBaseUrl, getDefaultBaseUrl } from '@/storage';
+import { Sparkles, Key, X, Check, RotateCcw } from 'lucide-react';
 
 interface AIKeyDialogProps {
   isOpen: boolean;
@@ -12,10 +12,14 @@ interface AIKeyDialogProps {
 
 export function AIKeyDialog({ isOpen, onClose, onKeySet }: AIKeyDialogProps) {
   const [key, setKey] = useState('');
+  const [baseUrl, setBaseUrlState] = useState('');
   const [hasKey, setHasKey] = useState(false);
 
   useEffect(() => {
-    setHasKey(!!getApiKey());
+    if (isOpen) {
+      setHasKey(!!getApiKey());
+      setBaseUrlState(getBaseUrl());
+    }
   }, [isOpen]);
 
   const handleSave = () => {
@@ -32,6 +36,18 @@ export function AIKeyDialog({ isOpen, onClose, onKeySet }: AIKeyDialogProps) {
     removeApiKey();
     setHasKey(false);
     setKey('');
+  };
+
+  const handleBaseUrlSave = () => {
+    if (baseUrl.trim()) {
+      setBaseUrl(baseUrl.trim());
+    }
+  };
+
+  const handleResetBaseUrl = () => {
+    const defaultUrl = getDefaultBaseUrl();
+    setBaseUrlState(defaultUrl);
+    setBaseUrl(defaultUrl);
   };
 
   if (!isOpen) return null;
@@ -54,53 +70,82 @@ export function AIKeyDialog({ isOpen, onClose, onKeySet }: AIKeyDialogProps) {
           </button>
         </div>
 
-        {hasKey ? (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-              <Check className="w-4 h-4 text-green-500" />
-              <span className="text-sm text-green-400">API Key 已配置</span>
-            </div>
-            <div className="flex gap-3">
+        <div className="space-y-6">
+          {/* API Key 部分 */}
+          {hasKey ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <Check className="w-4 h-4 text-green-500" />
+                <span className="text-sm text-green-400">API Key 已配置</span>
+              </div>
               <Button
                 variant="outline"
                 onClick={handleRemove}
-                className="flex-1"
+                className="w-full"
+                size="sm"
               >
                 移除 Key
               </Button>
-              <Button onClick={onClose} className="flex-1">
-                完成
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm text-muted-foreground mb-2 block">
+                  智谱开放平台 API Key
+                </label>
+                <Input
+                  type="password"
+                  placeholder="输入你的 API Key..."
+                  value={key}
+                  onChange={(e) => setKey(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Key 仅存储在本地浏览器中，不会上传到服务器
+                </p>
+              </div>
+              <Button onClick={handleSave} disabled={!key.trim()} className="w-full">
+                <Sparkles className="w-4 h-4 mr-2" />
+                保存 API Key
               </Button>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
+          )}
+
+          {/* Base URL 部分 */}
+          <div className="pt-4 border-t border-border space-y-3">
             <div>
               <label className="text-sm text-muted-foreground mb-2 block">
-                智谱开放平台 API Key
+                API Base URL（可选）
               </label>
-              <Input
-                type="password"
-                placeholder="输入你的 API Key..."
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-              />
+              <div className="flex gap-2">
+                <Input
+                  type="url"
+                  placeholder="https://open.bigmodel.cn/api/..."
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrlState(e.target.value)}
+                  onBlur={handleBaseUrlSave}
+                  className="flex-1"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleResetBaseUrl}
+                  title="重置为默认值"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </Button>
+              </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Key 仅存储在本地浏览器中，不会上传到服务器
+                自定义 API 端点，支持代理或兼容接口
               </p>
             </div>
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={onClose} className="flex-1">
-                取消
-              </Button>
-              <Button onClick={handleSave} disabled={!key.trim()} className="flex-1">
-                <Sparkles className="w-4 h-4 mr-2" />
-                保存
-              </Button>
-            </div>
           </div>
-        )}
+
+          {/* 完成按钮 */}
+          <Button variant="outline" onClick={onClose} className="w-full">
+            完成
+          </Button>
+        </div>
       </div>
     </div>
   );

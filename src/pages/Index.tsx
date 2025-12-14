@@ -39,7 +39,7 @@ const Index = () => {
     resetState,
   } = useSOPState();
 
-  const guidedFlow = useAIGuidedFlow(updateProject, updateSpec);
+  const guidedFlow = useAIGuidedFlow(updateProject, updateSpec, updateBuild);
 
   const { toast } = useToast();
 
@@ -125,15 +125,15 @@ const Index = () => {
           <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center">
             <Sparkles className="w-8 h-8 text-primary" />
           </div>
-          <h3 className="text-xl font-semibold">Project + Spec 阶段完成！</h3>
+          <h3 className="text-xl font-semibold">全流程设计完成！</h3>
           <p className="text-muted-foreground max-w-md mx-auto">
-            AI 已生成完整的项目定义和产品规格，包括：
+            AI 已生成完整的产品设计方案：
           </p>
-          <div className="grid grid-cols-2 gap-4 max-w-md mx-auto text-left">
+          <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto text-left">
             <div className="p-3 bg-muted/50 rounded-lg">
               <h4 className="font-medium text-sm mb-1">Project</h4>
               <ul className="text-xs text-muted-foreground space-y-0.5">
-                <li>• 目标人群 & 场景</li>
+                <li>• 人群 & 场景</li>
                 <li>• 一句话 PRD</li>
                 <li>• 行为闭环</li>
               </ul>
@@ -143,8 +143,15 @@ const Index = () => {
               <ul className="text-xs text-muted-foreground space-y-0.5">
                 <li>• 功能列表</li>
                 <li>• 用户故事</li>
-                <li>• 状态机 & 文案</li>
-                <li>• 埋点事件</li>
+                <li>• 状态机 & 埋点</li>
+              </ul>
+            </div>
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <h4 className="font-medium text-sm mb-1">Build</h4>
+              <ul className="text-xs text-muted-foreground space-y-0.5">
+                <li>• 技术栈</li>
+                <li>• 路由设计</li>
+                <li>• 数据模型</li>
               </ul>
             </div>
           </div>
@@ -157,10 +164,10 @@ const Index = () => {
               variant="glow"
               onClick={() => {
                 setMode('manual');
-                setCurrentStep(2);
+                setCurrentStep(3);
               }}
             >
-              继续到 Build 阶段
+              继续到 Quality 阶段
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           </div>

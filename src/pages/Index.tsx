@@ -12,6 +12,7 @@ import { StepReview } from '@/components/steps/StepReview';
 import { AIKeyDialog } from '@/components/AIKeyDialog';
 import { AIGuidedStart } from '@/components/AIGuidedStart';
 import { AIGuidedFlow } from '@/components/AIGuidedFlow';
+import { BuildPreviewPanel } from '@/components/BuildPreviewPanel';
 import { AIGuidedProgress } from '@/components/AIGuidedProgress';
 import { useSOPState } from '@/hooks/useSOPState';
 import { useAIGuidedFlow } from '@/hooks/useAIGuidedFlow';
@@ -183,9 +184,24 @@ const Index = () => {
       );
     }
 
+    // Build 确认步骤时显示预览面板
+    const showBuildPreview = guidedFlow.flowState.step === 'confirm-build';
+    
     return (
       <div className="space-y-6">
         <AIGuidedProgress currentStep={guidedFlow.flowState.step} isLoading={guidedFlow.isLoading} />
+        
+        {showBuildPreview && (
+          <BuildPreviewPanel
+            techStack={guidedFlow.flowState.selectedTechStack}
+            routes={guidedFlow.flowState.generatedRoutes}
+            dataModel={guidedFlow.flowState.generatedDataModel}
+            slices={guidedFlow.flowState.generatedSlices}
+            env={guidedFlow.flowState.generatedEnv}
+            releaseNote={guidedFlow.flowState.generatedReleaseNote}
+          />
+        )}
+        
         <AIGuidedFlow
           options={guidedFlow.options}
           isLoading={guidedFlow.isLoading}
@@ -272,46 +288,48 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Footer Navigation */}
-        <footer className="sticky bottom-0 bg-background/80 backdrop-blur-lg border-t border-border px-8 py-4">
-          <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentStep(Math.max(0, state.currentStep - 1))}
-              disabled={state.currentStep === 0}
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              上一步
-            </Button>
+        {/* Footer Navigation - 只在手动模式显示 */}
+        {mode === 'manual' && (
+          <footer className="sticky bottom-0 bg-background/80 backdrop-blur-lg border-t border-border px-8 py-4">
+            <div className="max-w-4xl mx-auto flex items-center justify-between">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStep(Math.max(0, state.currentStep - 1))}
+                disabled={state.currentStep === 0}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                上一步
+              </Button>
 
-            <div className="flex gap-1">
-              {SOP_STEPS.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentStep(index)}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    index === state.currentStep
-                      ? 'bg-primary w-6'
-                      : index < state.currentStep
-                      ? 'bg-primary/50'
-                      : 'bg-muted'
-                  }`}
-                />
-              ))}
+              <div className="flex gap-1">
+                {SOP_STEPS.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentStep(index)}
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      index === state.currentStep
+                        ? 'bg-primary w-6'
+                        : index < state.currentStep
+                        ? 'bg-primary/50'
+                        : 'bg-muted'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              <Button
+                variant="glow"
+                onClick={() =>
+                  setCurrentStep(Math.min(SOP_STEPS.length - 1, state.currentStep + 1))
+                }
+                disabled={state.currentStep === SOP_STEPS.length - 1}
+              >
+                下一步
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
             </div>
-
-            <Button
-              variant="glow"
-              onClick={() =>
-                setCurrentStep(Math.min(SOP_STEPS.length - 1, state.currentStep + 1))
-              }
-              disabled={state.currentStep === SOP_STEPS.length - 1}
-            >
-              下一步
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
-          </div>
-        </footer>
+          </footer>
+        )}
       </main>
 
       {/* AI Key Dialog */}

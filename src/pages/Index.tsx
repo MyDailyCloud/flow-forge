@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, RotateCcw, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCcw, Sparkles, Wand2, PenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SOPSidebar } from '@/components/SOPSidebar';
 import { ExportPanel } from '@/components/ExportPanel';
@@ -10,12 +10,19 @@ import { StepQuality } from '@/components/steps/StepQuality';
 import { StepGrowth } from '@/components/steps/StepGrowth';
 import { StepReview } from '@/components/steps/StepReview';
 import { AIKeyDialog } from '@/components/AIKeyDialog';
+import { AIGuidedStart } from '@/components/AIGuidedStart';
+import { AIGuidedFlow } from '@/components/AIGuidedFlow';
+import { AIGuidedProgress } from '@/components/AIGuidedProgress';
 import { useSOPState } from '@/hooks/useSOPState';
+import { useAIGuidedFlow } from '@/hooks/useAIGuidedFlow';
 import { SOP_STEPS } from '@/types/sop';
 import { useToast } from '@/hooks/use-toast';
 import { getApiKey } from '@/lib/zhipuAI';
 
+type Mode = 'manual' | 'guided';
+
 const Index = () => {
+  const [mode, setMode] = useState<Mode>('manual');
   const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(!!getApiKey());
 
@@ -32,11 +39,14 @@ const Index = () => {
     resetState,
   } = useSOPState();
 
+  const guidedFlow = useAIGuidedFlow(updateProject);
+
   const { toast } = useToast();
 
   const handleReset = () => {
     if (confirm('确定要重置所有数据吗？此操作不可撤销。')) {
       resetState();
+      guidedFlow.resetFlow();
       toast({
         title: '已重置',
         description: '所有 SOP 数据已清空',
@@ -45,6 +55,10 @@ const Index = () => {
   };
 
   const openAIDialog = () => setIsAIDialogOpen(true);
+
+  const handleSwitchToManual = () => {
+    setMode('manual');
+  };
 
   const renderCurrentStep = () => {
     switch (state.currentStep) {
@@ -85,6 +99,72 @@ const Index = () => {
     }
   };
 
+  const renderGuidedContent = () => {
+    if (guidedFlow.flowState.step === 'idle') {
+      return (
+        <AIGuidedStart
+          onStart={(input) => {
+            if (!hasApiKey) {
+              setIsAIDialogOpen(true);
+              toast({
+                title: '请先设置 API Key',
+                description: '需要 API Key 才能使用 AI 引导功能',
+              });
+              return;
+            }
+            guidedFlow.startFlow(input);
+          }}
+          isLoading={guidedFlow.isLoading}
+        />
+      );
+    }
+
+    if (guidedFlow.flowState.step === 'complete') {
+      return (
+        <div className="text-center py-12 space-y-6">
+          <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center">
+            <Sparkles className="w-8 h-8 text-primary" />
+          </div>
+          <h3 className="text-xl font-semibold">项目定义完成！</h3>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            AI 已生成完整的项目定义，包括一句话 PRD 和行为闭环。
+            你可以切换到手动模式查看和编辑详情。
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Button variant="outline" onClick={handleSwitchToManual}>
+              <PenLine className="w-4 h-4 mr-2" />
+              查看并编辑
+            </Button>
+            <Button
+              variant="glow"
+              onClick={() => {
+                setMode('manual');
+                setCurrentStep(1);
+              }}
+            >
+              继续下一步
+              <ChevronRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        <AIGuidedProgress currentStep={guidedFlow.flowState.step} />
+        <AIGuidedFlow
+          options={guidedFlow.options}
+          isLoading={guidedFlow.isLoading}
+          error={guidedFlow.error}
+          onSelect={guidedFlow.handleSelect}
+          onCustomInput={guidedFlow.handleCustomInput}
+          onRetry={guidedFlow.retryCurrentStep}
+        />
+      </div>
+    );
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       {/* Sidebar */}
@@ -97,13 +177,38 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <div>
               <span className="text-xs font-mono text-primary">
-                SOP {state.currentStep}
+                {mode === 'guided' ? 'AI 引导' : `SOP ${state.currentStep}`}
               </span>
               <h1 className="text-lg font-semibold">
-                {SOP_STEPS[state.currentStep].title}
+                {mode === 'guided' ? 'AI 端到端引导' : SOP_STEPS[state.currentStep].title}
               </h1>
             </div>
             <div className="flex items-center gap-4">
+              {/* Mode Toggle */}
+              <div className="flex rounded-lg border border-border p-0.5">
+                <button
+                  onClick={() => setMode('manual')}
+                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                    mode === 'manual'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <PenLine className="w-4 h-4 inline mr-1" />
+                  手动
+                </button>
+                <button
+                  onClick={() => setMode('guided')}
+                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                    mode === 'guided'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Wand2 className="w-4 h-4 inline mr-1" />
+                  AI 引导
+                </button>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -129,7 +234,9 @@ const Index = () => {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-8 py-6">
-          <div className="max-w-4xl mx-auto">{renderCurrentStep()}</div>
+          <div className="max-w-4xl mx-auto">
+            {mode === 'guided' ? renderGuidedContent() : renderCurrentStep()}
+          </div>
         </div>
 
         {/* Footer Navigation */}

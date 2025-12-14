@@ -10,7 +10,7 @@ interface AIGuidedProgressProps {
 interface StepInfo {
   id: FlowStep;
   label: string;
-  phase: 'project' | 'spec' | 'build';
+  phase: 'project' | 'spec' | 'build' | 'growth';
 }
 
 const FLOW_STEPS: StepInfo[] = [
@@ -30,12 +30,19 @@ const FLOW_STEPS: StepInfo[] = [
   { id: 'generating-routes', label: '路由', phase: 'build' },
   { id: 'generating-data-model', label: '数据', phase: 'build' },
   { id: 'confirm-build', label: '配置', phase: 'build' },
+  // Growth 阶段
+  { id: 'generating-before-after', label: '对比图', phase: 'growth' },
+  { id: 'generating-video-script', label: '视频', phase: 'growth' },
+  { id: 'generating-longform', label: '长文', phase: 'growth' },
+  { id: 'select-downloadable', label: '资产', phase: 'growth' },
+  { id: 'confirm-growth', label: '完成', phase: 'growth' },
 ];
 
 const PHASE_LABELS = {
   project: 'Project',
   spec: 'Spec',
   build: 'Build',
+  growth: 'Growth',
 };
 
 export function AIGuidedProgress({ currentStep, isLoading }: AIGuidedProgressProps) {
@@ -43,7 +50,7 @@ export function AIGuidedProgress({ currentStep, isLoading }: AIGuidedProgressPro
   const currentPhase = FLOW_STEPS.find((s) => s.id === currentStep)?.phase;
 
   // Group steps by phase
-  const phases = ['project', 'spec', 'build'] as const;
+  const phases = ['project', 'spec', 'build', 'growth'] as const;
 
   return (
     <div className="space-y-3">

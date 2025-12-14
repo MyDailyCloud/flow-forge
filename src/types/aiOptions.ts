@@ -31,6 +31,12 @@ export type FlowStep =
   | 'generating-routes'
   | 'generating-data-model'
   | 'confirm-build'
+  // Growth 阶段
+  | 'generating-before-after'
+  | 'generating-video-script'
+  | 'generating-longform'
+  | 'select-downloadable'
+  | 'confirm-growth'
   | 'complete';
 
 export interface UserStory {
@@ -63,4 +69,9 @@ export interface GuidedFlowState {
   selectedTechStack: string;
   generatedRoutes: string;
   generatedDataModel: string;
+  // Growth 阶段
+  generatedBeforeAfter: string;
+  generatedVideoScript: string;
+  generatedLongformOutline: string;
+  selectedDownloadable: string;
 }

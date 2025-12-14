@@ -89,7 +89,12 @@ export function AIGuidedFlow({
   }
 
   if (!options) {
-    return null;
+    return (
+      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+        <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
+        <p className="text-muted-foreground">等待 AI 生成下一步选项...</p>
+      </div>
+    );
   }
 
   return (

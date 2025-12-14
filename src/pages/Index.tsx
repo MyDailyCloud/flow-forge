@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, RotateCcw, Sparkles, Wand2, PenLine } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCcw, Sparkles, Wand2, PenLine, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SOPSidebar } from '@/components/SOPSidebar';
 import { ExportPanel } from '@/components/ExportPanel';
@@ -101,7 +101,9 @@ const Index = () => {
   };
 
   const renderGuidedContent = () => {
-    if (guidedFlow.flowState.step === 'idle') {
+    const { step } = guidedFlow.flowState;
+
+    if (step === 'idle') {
       return (
         <AIGuidedStart
           onStart={(input) => {
@@ -120,7 +122,35 @@ const Index = () => {
       );
     }
 
-    if (guidedFlow.flowState.step === 'complete') {
+    // 自动生成步骤 - 显示加载进度
+    const generatingSteps: Record<string, string> = {
+      'generating-states': '正在生成状态机和文案...',
+      'generating-routes': '正在生成路由设计...',
+      'generating-data-model': '正在生成数据模型...',
+      'generating-slices': '正在规划切片任务...',
+      'generating-before-after': '正在生成 Before/After 对比图描述词...',
+      'generating-video-script': '正在生成短视频脚本...',
+      'generating-longform': '正在生成长文大纲...',
+    };
+
+    if (step in generatingSteps) {
+      return (
+        <div className="space-y-6">
+          <AIGuidedProgress currentStep={step} isLoading={true} />
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-full border-2 border-primary/20 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              </div>
+              <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
+            </div>
+            <p className="text-lg text-muted-foreground">{generatingSteps[step]}</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (step === 'complete') {
       return (
         <div className="text-center py-12 space-y-6">
           <div className="w-16 h-16 mx-auto rounded-full bg-primary/20 flex items-center justify-center">

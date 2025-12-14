@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { chatWithAI, getApiKey } from '@/lib/zhipuAI';
 import { AI_GUIDED_PROMPTS, parseAIResponse } from '@/lib/zhipuAI';
 import type { AIOption, AIOptionsResponse, FlowStep, GuidedFlowState, UserStory, TrackingEvent } from '@/types/aiOptions';
-import type { ProjectData, SpecData, BuildData } from '@/types/sop';
+import type { ProjectData, SpecData, BuildData, GrowthPack } from '@/types/sop';
 
 const initialFlowState: GuidedFlowState = {
   step: 'idle',
@@ -22,12 +22,18 @@ const initialFlowState: GuidedFlowState = {
   selectedTechStack: '',
   generatedRoutes: '',
   generatedDataModel: '',
+  // Growth 阶段
+  generatedBeforeAfter: '',
+  generatedVideoScript: '',
+  generatedLongformOutline: '',
+  selectedDownloadable: '',
 };
 
 export function useAIGuidedFlow(
   updateProject: (updates: Partial<ProjectData>) => void,
   updateSpec: (updates: Partial<SpecData>) => void,
-  updateBuild: (updates: Partial<BuildData>) => void
+  updateBuild: (updates: Partial<BuildData>) => void,
+  updateGrowth: (updates: Partial<GrowthPack>) => void
 ) {
   const [flowState, setFlowState] = useState<GuidedFlowState>(initialFlowState);
   const [options, setOptions] = useState<AIOptionsResponse | null>(null);
@@ -272,12 +278,81 @@ export function useAIGuidedFlow(
                 });
               }
               
-              // Build 阶段完成
-              setFlowState((prev) => ({ ...prev, step: 'complete' }));
+              // Build 阶段完成，继续到 Growth 阶段
+              setFlowState((prev) => ({ ...prev, step: 'generating-before-after' }));
+              
+              // 生成 Before/After 对比图描述词
+              const beforeAfterPrompt = AI_GUIDED_PROMPTS.generateBeforeAfter(
+                flowState.generatedPRD,
+                flowState.selectedPersona,
+                flowState.selectedOutcome
+              );
+              const beforeAfterResponse = await chatWithAI([{ role: 'user', content: beforeAfterPrompt }]);
+              const beforeAfterData = parseAIResponse<{ beforeAfter: any }>(beforeAfterResponse);
+              
+              if (beforeAfterData) {
+                const formattedBeforeAfter = formatBeforeAfterContent(beforeAfterData.beforeAfter);
+                updateGrowth({ beforeAfterImage: formattedBeforeAfter });
+                setFlowState((prev) => ({ 
+                  ...prev, 
+                  generatedBeforeAfter: formattedBeforeAfter,
+                  step: 'generating-video-script' 
+                }));
+                
+                // 生成视频脚本
+                const videoPrompt = AI_GUIDED_PROMPTS.generateVideoScript(
+                  flowState.generatedPRD,
+                  flowState.selectedPersona,
+                  flowState.selectedOutcome,
+                  flowState.selectedFeatures
+                );
+                const videoResponse = await chatWithAI([{ role: 'user', content: videoPrompt }]);
+                const videoData = parseAIResponse<{ videoScript: any }>(videoResponse);
+                
+                if (videoData) {
+                  const formattedVideo = formatVideoScriptContent(videoData.videoScript);
+                  updateGrowth({ shortVideoScript: formattedVideo });
+                  setFlowState((prev) => ({ 
+                    ...prev, 
+                    generatedVideoScript: formattedVideo,
+                    step: 'generating-longform' 
+                  }));
+                  
+                  // 生成长文大纲
+                  const longformPrompt = AI_GUIDED_PROMPTS.generateLongformOutline(
+                    flowState.generatedPRD,
+                    flowState.selectedPersona,
+                    flowState.selectedOutcome,
+                    flowState.selectedScenario
+                  );
+                  const longformResponse = await chatWithAI([{ role: 'user', content: longformPrompt }]);
+                  const longformData = parseAIResponse<{ longformOutline: any }>(longformResponse);
+                  
+                  if (longformData) {
+                    const formattedLongform = formatLongformContent(longformData.longformOutline);
+                    updateGrowth({ longformOutline: formattedLongform });
+                    setFlowState((prev) => ({ 
+                      ...prev, 
+                      generatedLongformOutline: formattedLongform,
+                      step: 'select-downloadable' 
+                    }));
+                    
+                    // 生成可领取资产选项
+                    const downloadableResult = await generateOptions(
+                      AI_GUIDED_PROMPTS.suggestDownloadableAssets(
+                        flowState.generatedPRD,
+                        flowState.selectedFeatures,
+                        flowState.selectedPersona
+                      )
+                    );
+                    if (downloadableResult) setOptions(downloadableResult);
+                  }
+                }
+              }
             }
           }
         } catch (err) {
-          setError('生成 Build 配置失败');
+          setError('生成配置失败');
         } finally {
           setIsLoading(false);
         }
@@ -285,10 +360,25 @@ export function useAIGuidedFlow(
         break;
       }
 
+      case 'select-downloadable': {
+        const downloadableValue = selectedOption.value || selectedOption.label;
+        updateGrowth({ downloadableAsset: JSON.stringify(downloadableValue) });
+        setFlowState((prev) => ({ 
+          ...prev, 
+          selectedDownloadable: selectedOption.label,
+          step: 'confirm-growth' 
+        }));
+        
+        // Growth 阶段完成，全流程结束
+        setFlowState((prev) => ({ ...prev, step: 'complete' }));
+        setOptions(null);
+        break;
+      }
+
       default:
         break;
     }
-  }, [flowState, updateProject, updateSpec, updateBuild, generateOptions]);
+  }, [flowState, updateProject, updateSpec, updateBuild, updateGrowth, generateOptions]);
 
   const handleCustomInput = useCallback(async (value: string) => {
     // Treat custom input same as selected option
@@ -358,8 +448,77 @@ export function useAIGuidedFlow(
         );
         if (techStackResult) setOptions(techStackResult);
         break;
+      case 'select-downloadable':
+        const downloadableResult = await generateOptions(
+          AI_GUIDED_PROMPTS.suggestDownloadableAssets(
+            flowState.generatedPRD,
+            flowState.selectedFeatures,
+            flowState.selectedPersona
+          )
+        );
+        if (downloadableResult) setOptions(downloadableResult);
+        break;
     }
   }, [flowState, generateOptions]);
+
+  // Helper functions for formatting Growth content
+  function formatBeforeAfterContent(data: any): string {
+    return `## Before/After 对比图
+
+### Before（使用前）
+**图片生成 Prompt：**
+\`\`\`
+${data.before?.prompt || ''}
+\`\`\`
+**场景说明：** ${data.before?.description || ''}
+
+### After（使用后）
+**图片生成 Prompt：**
+\`\`\`
+${data.after?.prompt || ''}
+\`\`\`
+**场景说明：** ${data.after?.description || ''}
+
+### 社交媒体配文
+${data.socialCopy || data.combined || ''}`;
+  }
+
+  function formatVideoScriptContent(data: any): string {
+    return `## 15秒短视频脚本
+
+### Hook（0-5s）
+**文案：** ${data.hook?.text || ''}
+**画面：** ${data.hook?.visual || ''}
+
+### Solution（5-12s）
+**文案：** ${data.solution?.text || ''}
+**画面：** ${data.solution?.visual || ''}
+
+### CTA（12-15s）
+**文案：** ${data.cta?.text || ''}
+**画面：** ${data.cta?.visual || ''}
+
+### 完整脚本
+${data.fullScript || ''}
+
+### 话题标签
+${(data.hashtags || []).map((t: string) => `#${t}`).join(' ')}`;
+  }
+
+  function formatLongformContent(data: any): string {
+    const sections = (data.sections || []).map((s: any) => 
+      `### ${s.heading}\n${(s.points || []).map((p: string) => `- ${p}`).join('\n')}\n*约 ${s.wordCount || 0} 字*`
+    ).join('\n\n');
+    
+    return `## ${data.title || '长文大纲'}
+
+**副标题：** ${data.subtitle || ''}
+
+${sections}
+
+**目标平台：** ${data.targetPlatform || '公众号/知乎'}
+**预计阅读时间：** ${data.estimatedReadTime || '5分钟'}`;
+  }
 
   return {
     flowState,

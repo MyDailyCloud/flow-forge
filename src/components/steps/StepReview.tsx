@@ -2,6 +2,7 @@ import { TrendingDown, Beaker, Target, ArrowRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { TermTooltip } from '@/components/TermTooltip';
 import type { ReviewData } from '@/types/sop';
 
 interface StepReviewProps {
@@ -28,7 +29,7 @@ export function StepReview({ data, onUpdate }: StepReviewProps) {
 
       {/* Funnel Metrics */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">漏斗指标</h3>
+        <h3 className="text-lg font-semibold"><TermTooltip term="funnelMetrics">漏斗指标</TermTooltip></h3>
         <div className="grid grid-cols-1 gap-4">
           {funnelSteps.map((step, index) => (
             <div key={step.key} className="flex items-center gap-4">
@@ -98,7 +99,7 @@ export function StepReview({ data, onUpdate }: StepReviewProps) {
       <div className="space-y-2">
         <Label className="flex items-center gap-2">
           <Beaker className="w-4 h-4 text-accent" />
-          A/B 实验设计
+          <TermTooltip term="abTesting">A/B 实验设计</TermTooltip>
         </Label>
         <Textarea
           placeholder="设计一个 A/B 或对照实验（7 天内出结论）\n例：\n- 实验组：新引导文案\n- 对照组：原引导文案\n- 指标：激活率"

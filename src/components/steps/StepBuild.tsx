@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { TermTooltip } from '@/components/TermTooltip';
 import { cn } from '@/lib/utils';
 import type { BuildData } from '@/types/sop';
 
@@ -54,7 +55,7 @@ export function StepBuild({ data, onUpdate }: StepBuildProps) {
       <div>
         <h2 className="text-2xl font-bold mb-2">AI 辅助开发</h2>
         <p className="text-muted-foreground">
-          在一天内把"可用 MVP"做出来
+          在一天内把"可用 <TermTooltip term="mvp">MVP</TermTooltip>"做出来
         </p>
       </div>
 
@@ -62,15 +63,15 @@ export function StepBuild({ data, onUpdate }: StepBuildProps) {
       <div className="p-4 rounded-lg bg-secondary/30 border border-border">
         <h4 className="text-sm font-semibold mb-3">开发节奏</h4>
         <div className="flex flex-wrap gap-2 text-xs">
-          <span className="px-2 py-1 rounded bg-primary/10 text-primary">1. 脚手架 (15-30min)</span>
+          <span className="px-2 py-1 rounded bg-primary/10 text-primary">1. <TermTooltip term="scaffold">脚手架</TermTooltip> (15-30min)</span>
           <span className="text-muted-foreground">→</span>
-          <span className="px-2 py-1 rounded bg-accent/10 text-accent">2. 垂直切片</span>
+          <span className="px-2 py-1 rounded bg-accent/10 text-accent">2. <TermTooltip term="verticalSlice">垂直切片</TermTooltip></span>
           <span className="text-muted-foreground">→</span>
-          <span className="px-2 py-1 rounded bg-primary/10 text-primary">3. 横向复制</span>
+          <span className="px-2 py-1 rounded bg-primary/10 text-primary">3. <TermTooltip term="horizontalReplication">横向复制</TermTooltip></span>
           <span className="text-muted-foreground">→</span>
           <span className="px-2 py-1 rounded bg-accent/10 text-accent">4. 补齐错误态</span>
           <span className="text-muted-foreground">→</span>
-          <span className="px-2 py-1 rounded bg-primary/10 text-primary">5. 可观测性</span>
+          <span className="px-2 py-1 rounded bg-primary/10 text-primary">5. <TermTooltip term="observability">可观测性</TermTooltip></span>
         </div>
       </div>
 
@@ -105,7 +106,7 @@ export function StepBuild({ data, onUpdate }: StepBuildProps) {
       <div className="space-y-2">
         <Label className="flex items-center gap-2">
           <Route className="w-4 h-4 text-primary" />
-          路由设计
+          <TermTooltip term="routeDesign">路由设计</TermTooltip>
         </Label>
         <Textarea
           placeholder="/home, /dashboard, /settings..."
@@ -118,7 +119,7 @@ export function StepBuild({ data, onUpdate }: StepBuildProps) {
       <div className="space-y-2">
         <Label className="flex items-center gap-2">
           <Database className="w-4 h-4 text-primary" />
-          数据模型
+          <TermTooltip term="dataModel">数据模型</TermTooltip>
         </Label>
         <Textarea
           placeholder="User { id, name, email }, Project { id, title, owner_id }..."
@@ -175,7 +176,7 @@ export function StepBuild({ data, onUpdate }: StepBuildProps) {
       <div className="space-y-2">
         <Label className="flex items-center gap-2">
           <FileCode className="w-4 h-4 text-primary" />
-          Release Note
+          <TermTooltip term="releaseNote">Release Note</TermTooltip>
         </Label>
         <Textarea
           placeholder="本次发布的主要变更..."

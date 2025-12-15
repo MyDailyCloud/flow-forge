@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { AIAssistButton } from '@/components/AIAssistButton';
+import { TermTooltip } from '@/components/TermTooltip';
 import { SOP_PROMPTS } from '@/lib/zhipuAI';
 import type { SpecData, UserStory, TrackingEvent } from '@/types/sop';
 
@@ -97,7 +98,7 @@ export function StepSpec({ data, prd, onUpdate, onOpenAIDialog }: StepSpecProps)
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold">用户故事 (最多3条)</h3>
+            <h3 className="text-lg font-semibold"><TermTooltip term="userStory">用户故事</TermTooltip> (最多3条)</h3>
           </div>
           <AIAssistButton
             prompt={SOP_PROMPTS.generateUserStories(prd, featuresString)}
@@ -179,7 +180,7 @@ export function StepSpec({ data, prd, onUpdate, onOpenAIDialog }: StepSpecProps)
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <GitBranch className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">状态机</h3>
+          <h3 className="text-lg font-semibold"><TermTooltip term="stateMachine">状态机</TermTooltip></h3>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -213,7 +214,7 @@ export function StepSpec({ data, prd, onUpdate, onOpenAIDialog }: StepSpecProps)
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <FileText className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">文案包</h3>
+          <h3 className="text-lg font-semibold"><TermTooltip term="copyPack">文案包</TermTooltip></h3>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -273,7 +274,7 @@ export function StepSpec({ data, prd, onUpdate, onOpenAIDialog }: StepSpecProps)
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold">埋点事件</h3>
+            <h3 className="text-lg font-semibold"><TermTooltip term="tracking">埋点事件</TermTooltip></h3>
           </div>
           <AIAssistButton
             prompt={SOP_PROMPTS.suggestTracking(featuresString || prd)}

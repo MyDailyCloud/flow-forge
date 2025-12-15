@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { AIAssistButton } from '@/components/AIAssistButton';
+import { TermTooltip } from '@/components/TermTooltip';
 import { SOP_PROMPTS } from '@/lib/zhipuAI';
 import type { ProjectData, Loop } from '@/types/sop';
 
@@ -98,7 +99,7 @@ export function StepProject({ data, onUpdate, onOpenAIDialog }: StepProjectProps
         <div className="space-y-2">
           <Label className="flex items-center gap-2">
             <Gauge className="w-4 h-4 text-primary" />
-            北极星指标
+            <TermTooltip term="northStarMetric">北极星指标</TermTooltip>
           </Label>
           <Input
             placeholder="例：日活用户数 DAU"
@@ -124,7 +125,7 @@ export function StepProject({ data, onUpdate, onOpenAIDialog }: StepProjectProps
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold">3 个最小闭环</h3>
+            <h3 className="text-lg font-semibold">3 个<TermTooltip term="loop">最小闭环</TermTooltip></h3>
             <p className="text-sm text-muted-foreground">
               触发（用户何时来）→ 行动（做什么）→ 回报（立即得到什么）
             </p>
@@ -185,7 +186,7 @@ export function StepProject({ data, onUpdate, onOpenAIDialog }: StepProjectProps
       {/* One-liner PRD Output */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label>一句话 PRD</Label>
+          <Label><TermTooltip term="prd">一句话 PRD</TermTooltip></Label>
           <AIAssistButton
             prompt={SOP_PROMPTS.generatePRD(data.persona, data.scenario, data.outcome)}
             onResult={handleGeneratePRD}

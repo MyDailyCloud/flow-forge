@@ -31,3 +31,10 @@ export {
   exportSOPState,
   importSOPState,
 } from './sopStorage';
+
+export {
+  isFirstVisit,
+  markAsVisited,
+  getPreferredMode,
+  setPreferredMode,
+} from './userPreferences';

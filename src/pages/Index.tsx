@@ -16,16 +16,19 @@ import { BuildPreviewPanel } from '@/components/BuildPreviewPanel';
 import { QualityPreviewPanel } from '@/components/QualityPreviewPanel';
 import { ReviewPreviewPanel } from '@/components/ReviewPreviewPanel';
 import { AIGuidedProgress } from '@/components/AIGuidedProgress';
+import { OnboardingDialog } from '@/components/OnboardingDialog';
 import { useSOPState } from '@/hooks/useSOPState';
 import { useAIGuidedFlow } from '@/hooks/useAIGuidedFlow';
 import { SOP_STEPS } from '@/types/sop';
 import { useToast } from '@/hooks/use-toast';
 import { getApiKey } from '@/lib/zhipuAI';
+import { isFirstVisit, markAsVisited, getPreferredMode, setPreferredMode } from '@/storage';
 
 type Mode = 'manual' | 'guided';
 
 const Index = () => {
-  const [mode, setMode] = useState<Mode>('manual');
+  const [mode, setMode] = useState<Mode>(() => getPreferredMode());
+  const [showOnboarding, setShowOnboarding] = useState(() => isFirstVisit());
   const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(!!getApiKey());
 
@@ -60,7 +63,18 @@ const Index = () => {
   const openAIDialog = () => setIsAIDialogOpen(true);
 
   const handleSwitchToManual = () => {
-    setMode('manual');
+    handleModeChange('manual');
+  };
+
+  const handleModeChange = (newMode: Mode) => {
+    setMode(newMode);
+    setPreferredMode(newMode);
+  };
+
+  const handleOnboardingComplete = (selectedMode: Mode) => {
+    handleModeChange(selectedMode);
+    markAsVisited();
+    setShowOnboarding(false);
   };
 
   const renderCurrentStep = () => {
@@ -292,7 +306,7 @@ const Index = () => {
               {/* Mode Toggle */}
               <div className="flex rounded-lg border border-border p-0.5">
                 <button
-                  onClick={() => setMode('manual')}
+                  onClick={() => handleModeChange('manual')}
                   className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                     mode === 'manual'
                       ? 'bg-primary text-primary-foreground'
@@ -303,7 +317,7 @@ const Index = () => {
                   手动
                 </button>
                 <button
-                  onClick={() => setMode('guided')}
+                  onClick={() => handleModeChange('guided')}
                   className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                     mode === 'guided'
                       ? 'bg-primary text-primary-foreground'
@@ -387,6 +401,12 @@ const Index = () => {
           </footer>
         )}
       </main>
+
+      {/* Onboarding Dialog */}
+      <OnboardingDialog
+        open={showOnboarding}
+        onComplete={handleOnboardingComplete}
+      />
 
       {/* AI Key Dialog */}
       <AIKeyDialog
